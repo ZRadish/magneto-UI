@@ -1,0 +1,28 @@
+# Node.js dependencies
+node_modules/
+/backend/node_modules
+/frontend/node_modules
+
+# Build output
+dist
+/frontend/dist
+/backend/dist
+
+# Environment variables
+.env
+/backend/.env
+/frontend/.env
+
+# OS and editor files
+.DS_Store
+*.log
+.vscode/
+
+# Add Vite's default .gitignore contents from the frontend
+**/*.DS_Store
+dist
+node_modules
+
+# Vite cache and temporary files
+node_modules/.vite
+*.timestamp-*
