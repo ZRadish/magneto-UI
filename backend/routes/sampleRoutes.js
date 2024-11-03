@@ -1,10 +1,10 @@
 // routes/sampleRoutes.js
 import express from 'express';
-import { getSampleData, runPythonScript } from '../controllers/sampleController.js';
+import * as sampleController from '../controllers/sampleController.js';
 
 const router = express.Router();
 
-router.get('/hello', getSampleData); // GET /api/sample/hello
-router.get('/run-python', runPythonScript); // GET /api/sample/run-python
+router.get('/hello', sampleController.getSampleData); // GET /api/sample/hello
+router.get('/run-python', sampleController.runPythonScript); // GET /api/sample/run-python
 
 export default router;
