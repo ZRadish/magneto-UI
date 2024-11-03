@@ -1,16 +1,34 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, Lock, Loader } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Input from "../components/Input";
+import api from "../utils/api.ts";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const isLoading = false;
+  const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    console.log("Name:", email);
+    const response = await api.post("/user/login", {
+      email,
+      password,
+      isVerified: false, // Set default value
+    });
+
+    const data = response.data;
+
+    if (data.error) {
+      setError(data.error);
+    } else {
+      // Handle successful registration (e.g., redirect to login or show success message)
+      console.log("Login successful:", data);
+      navigate("/");
+    }
   };
 
   return (
@@ -84,3 +102,6 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+function setError(error: any) {
+  throw new Error("Function not implemented.");
+}

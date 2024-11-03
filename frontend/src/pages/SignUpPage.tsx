@@ -4,15 +4,34 @@ import Input from "../components/Input";
 import { User, Mail, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
 import PasswordStrengthMeter from "../components/PasswordStrength";
+import api from "../utils/api.ts";
 
 const SignUpPage = () => {
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const handleSignUp = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Name:", name);
+    console.log("Name:", firstName);
+    const response = await api.post("/user/register", {
+      firstName,
+      lastName,
+      email,
+      password,
+      isVerified: false, // Set default value
+    });
+
+    const data = response.data;
+
+    if (data.error) {
+      setError(data.error);
+    } else {
+      // Handle successful registration (e.g., redirect to login or show success message)
+      console.log("Registration successful:", data);
+    }
   };
 
   return (
@@ -35,9 +54,16 @@ const SignUpPage = () => {
             <Input
               Icon={User}
               type="text"
-              placeholder="Full Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              placeholder="First Name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+            />
+            <Input
+              Icon={User}
+              type="text"
+              placeholder="Last Name"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
             />
             <Input
               Icon={Mail}
