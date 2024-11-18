@@ -4,6 +4,10 @@ import { motion } from "framer-motion";
 import { FileText, Loader, X } from "lucide-react";
 import Input from "../components/Input";
 
+const api = axios.create({
+  baseURL: "http://localhost:5000/api/files", // Replace with your backend's base URL
+});
+
 const FileUploadPage: React.FC = () => {
   const [files, setFiles] = useState<FileList | null>(null);
   const [progress, setProgress] = useState<{ started: boolean; pc: number }>({
@@ -11,7 +15,8 @@ const FileUploadPage: React.FC = () => {
     pc: 0,
   });
   const [msg, setMsg] = useState<string | null>(null);
-  const isLoading = false; //Define loading state for the button
+  const [fileInfo, setFileInfo] = useState<any>(null); // To store metadata of the uploaded file
+  const isLoading = false; // Define loading state for the button
 
   // Handles file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,26 +37,22 @@ const FileUploadPage: React.FC = () => {
     setFiles(updatedFiles as FileList);
   };
 
-  const handleUpload = () => {
+  // Handles file upload and processing
+  const uploadFile = async () => {
     if (!files || files.length === 0) {
-      console.log("No file selected");
-      setMsg("No files selected. Please choose files to upload.");
+      setMsg("No files selected. Please choose a file to upload.");
       return;
     }
 
     const fd = new FormData();
-    // Append all files to the FormData
-    for (let i = 0; i < files.length; i++) {
-      fd.append(`file${i + 1}`, files[i]);
-    }
+    fd.append("file", files[0]); // Assuming single file upload
 
     setMsg("Uploading...");
-    setProgress((prevState) => {
-      return { ...prevState, started: true };
-    });
+    setProgress((prevState) => ({ ...prevState, started: true }));
 
-    axios
-      .post("https://httpbin.org/post", fd, {
+    try {
+      // Call the upload endpoint
+      const uploadResponse = await api.post("/upload", fd, {
         onUploadProgress: (progressEvent: AxiosProgressEvent) => {
           if (progressEvent.total) {
             const progressPercentage = Math.round(
@@ -64,17 +65,37 @@ const FileUploadPage: React.FC = () => {
           }
         },
         headers: {
-          "Custom-Header": "value",
+          "Content-Type": "multipart/form-data",
         },
-      })
-      .then((res) => {
-        setMsg("Upload Successful");
-        console.log(res.data);
-      })
-      .catch((err) => {
-        setMsg("Upload Failed");
-        console.log(err);
       });
+
+      setMsg("Upload successful");
+      setFileInfo(uploadResponse.data.file); // Save file metadata
+      console.log("Upload response:", uploadResponse.data);
+
+      // Automatically call the process endpoint
+      const { filename } = uploadResponse.data.file;
+      setMsg("Processing file...");
+      const processResponse = await api.post(`/process/${filename}`);
+      setMsg("File processed successfully");
+      console.log("Process response:", processResponse.data);
+    } catch (error) {
+      setMsg("Upload or processing failed");
+      console.error(error.response?.data || error.message);
+    }
+  };
+
+  // Fetches the file status
+  const fetchFileStatus = async () => {
+    setMsg("Fetching file status...");
+    try {
+      const response = await api.get("/file-status");
+      setMsg("File status fetched successfully");
+      console.log("File status:", response.data);
+    } catch (error) {
+      setMsg("Error fetching file status");
+      console.error(error.response?.data || error.message);
+    }
   };
 
   return (
@@ -87,7 +108,7 @@ const FileUploadPage: React.FC = () => {
       >
         <div className="p-8">
           <h2 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-green-400 to-emerald-500 text-transparent bg-clip-text">
-            Upload Your File
+            Upload and Process Your File
           </h2>
 
           <form onSubmit={(e) => e.preventDefault()}>
@@ -96,13 +117,7 @@ const FileUploadPage: React.FC = () => {
               Icon={FileText}
               type="file"
               placeholder="Choose a file"
-              onChange={(e) => {
-                const selectedFiles = e.target.files;
-                if (selectedFiles) {
-                  setFiles(selectedFiles); //Set the selected files to state
-                }
-              }}
-              multiple //Allow multiple file selection
+              onChange={handleFileChange}
               className="w-full py-3 px-4 bg-gray-700 bg-opacity-60 rounded-lg border border-gray-600 text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 file:bg-green-500 file:border-none file:text-white file:font-bold file:py-2 file:px-4 file:rounded-lg file:hover:bg-green-600 transition duration-200"
             />
 
@@ -126,29 +141,33 @@ const FileUploadPage: React.FC = () => {
                     </li>
                   ))}
                 </ul>
-                {/* Display number of files */}
-                <div className="mt-2 text-white text-center">
-                  <span>
-                    {files.length} file{files.length > 1 ? "s" : ""} selected
-                  </span>
-                </div>
               </div>
             )}
 
-            {/* Upload Button */}
+            {/* Upload and Process Button */}
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-lg shadow-lg hover:from-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition duration-200"
-              type="button" //Change from submit to button
-              onClick={handleUpload}
-              disabled={isLoading} //Disable button if loading
+              className="w-full py-3 px-4 mt-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-lg shadow-lg hover:from-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition duration-200"
+              type="button"
+              onClick={uploadFile}
             >
               {isLoading ? (
                 <Loader className="w-6 h-6 animate-spin mx-auto" />
               ) : (
-                "Upload File"
+                "Upload and Process File"
               )}
+            </motion.button>
+
+            {/* Fetch Status Button */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-3 px-4 mt-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold rounded-lg shadow-lg hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition duration-200"
+              type="button"
+              onClick={fetchFileStatus}
+            >
+              Fetch File Status
             </motion.button>
           </form>
 
@@ -168,16 +187,6 @@ const FileUploadPage: React.FC = () => {
           {msg && (
             <span className="block mt-4 text-center text-white">{msg}</span>
           )}
-        </div>
-
-        {/* Footer Link */}
-        <div className="px-8 py-4 bg-gray-900 bg-opacity-50 flex justify-center">
-          <p className="text-sm text-gray-400">
-            Need help?{" "}
-            <a href="/support" className="text-green-400 hover:underline">
-              Contact Support
-            </a>
-          </p>
         </div>
       </motion.div>
     </div>
