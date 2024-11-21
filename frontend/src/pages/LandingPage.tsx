@@ -39,12 +39,42 @@ const LandingPage = () => {
   ];
 
   const aboutItems = [
-    { title: "Title", body: "some text" },
-    { title: "Title", body: "some text" },
-    { title: "Title", body: "some text" },
-    { title: "Title", body: "some text" },
-    { title: "Title", body: "some text" },
-    { title: "Title", body: "some text" },
+    {
+      title: "Person 1",
+      role: "role",
+      image: "",
+      linkedin: "https://www.linkedin.com",
+    },
+    {
+      title: "Person 2",
+      role: "role",
+      // image: "headshot_someone",
+      // // linkedin: "https://www.linkedin.com
+    },
+    {
+      title: "Person 3",
+      role: "role",
+      // image: "headshot_someone",
+      // // linkedin: "https://www.linkedin.com",
+    },
+    {
+      title: "Person 4",
+      role: "role",
+      // image: "headshot_someone",
+      // // linkedin: "https://www.linkedin.com",
+    },
+    {
+      title: "Person 5",
+      role: "role",
+      // image:"headshot_someone",
+      // // linkedin: "https://www.linkedin.com",
+    },
+    {
+      title: "Person 6",
+      role: "role",
+      // image:"headshot_someone",
+      // // linkedin: "https://www.linkedin.com",
+    },
   ];
 
   return (
@@ -180,30 +210,45 @@ const LandingPage = () => {
           >
             <div className="text-center max-w-2xl mx-auto mb-12">
               <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
-                About Us
+                Meet Our Team
               </h2>
               <p className="text-gray-400">Subheading</p>
             </div>
 
             <div className="w-full max-w-6xl">
               <div className="border border-violet-900 rounded-lg p-6 hover:border-violet-700 transition-colors hover:shadow-lg hover:shadow-violet-900/50">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
                   {aboutItems.map((item, index) => (
                     <div
                       key={index}
                       className="bg-gray-900 rounded-lg shadow-sm hover:shadow-lg hover:shadow-violet-900/50 transition-all duration-300 p-4 hover:scale-105"
                     >
-                      <img
-                        className="w-full h-32 object-cover rounded-md mb-4"
-                        src="https://via.placeholder.com/150"
-                        alt={`About ${index + 1}`}
-                      />
-                      <h3 className="font-bold mb-2 text-violet-500">
-                        {item.title}
-                      </h3>
-                      <p className="text-sm text-gray-400 leading-relaxed">
-                        {item.body}
-                      </p>
+                      <div className="flex flex-col items-center text-center">
+                        <div className="mb-4">
+                          <a
+                            href={item.linkedin}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block w-40 h-40 rounded-full overflow-hidden ring-2 ring-violet-600/20 group-hover:ring-violet-600/40 transition-all duration-300"
+                          >
+                            {item.image && (
+                              <img
+                                className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-300"
+                                src={item.image}
+                                alt={`${item.title}'s headshot`}
+                              />
+                            )}
+                          </a>
+                        </div>
+                        <div className="space-y-2">
+                          <h3 className="font-bold mb-2 text-violet-500">
+                            {item.title}
+                          </h3>
+                          <p className="text-sm text-gray-400 leading-relaxed">
+                            {item.role}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
