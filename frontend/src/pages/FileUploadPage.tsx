@@ -3,10 +3,7 @@ import axios, { AxiosProgressEvent } from "axios";
 import { motion } from "framer-motion";
 import { FileText, Loader, X } from "lucide-react";
 import Input from "../components/Input";
-
-const api = axios.create({
-  baseURL: "http://localhost:5000/api/files", // Replace with your backend's base URL
-});
+import api from "../utils/api"; // Importing the reusable API instance
 
 const FileUploadPage: React.FC = () => {
   const [files, setFiles] = useState<FileList | null>(null);
@@ -15,7 +12,7 @@ const FileUploadPage: React.FC = () => {
     pc: 0,
   });
   const [msg, setMsg] = useState<string | null>(null);
-  const [fileInfo, setFileInfo] = useState<any>(null); // To store metadata of the uploaded file
+  const [, setFileInfo] = useState<any>(null); // To store metadata of the uploaded file
   const isLoading = false; // Define loading state for the button
 
   // Handles file selection
@@ -34,67 +31,70 @@ const FileUploadPage: React.FC = () => {
     const updatedFiles = Array.from(files).filter((_, i) => i !== index);
 
     // Update the files state
-    setFiles(updatedFiles as FileList);
+    setFiles(updatedFiles as unknown as FileList);
   };
 
-  // Handles file upload and processing
-  const uploadFile = async () => {
-    if (!files || files.length === 0) {
-      setMsg("No files selected. Please choose a file to upload.");
-      return;
-    }
+// Handles file upload and processing
+const uploadFile = async () => {
+  if (!files || files.length === 0) {
+    setMsg("No files selected. Please choose a file to upload.");
+    return;
+  }
 
-    const fd = new FormData();
-    fd.append("file", files[0]); // Assuming single file upload
+  const fd = new FormData();
+  fd.append("file", files[0]); // Assuming single file upload
 
-    setMsg("Uploading...");
-    setProgress((prevState) => ({ ...prevState, started: true }));
+  setMsg("Uploading and processing...");
+  setProgress((prevState) => ({ ...prevState, started: true }));
 
-    try {
-      // Call the upload endpoint
-      const uploadResponse = await api.post("/upload", fd, {
-        onUploadProgress: (progressEvent: AxiosProgressEvent) => {
-          if (progressEvent.total) {
-            const progressPercentage = Math.round(
-              (progressEvent.loaded / progressEvent.total) * 100
-            );
-            setProgress((prevState) => ({
-              ...prevState,
-              pc: progressPercentage,
-            }));
-          }
-        },
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+  try {
+    // Call the /upload endpoint
+    const uploadResponse = await api.post("/files/upload", fd, {
+      onUploadProgress: (progressEvent: AxiosProgressEvent) => {
+        if (progressEvent.total) {
+          const progressPercentage = Math.round(
+            (progressEvent.loaded / progressEvent.total) * 100
+          );
+          setProgress((prevState) => ({
+            ...prevState,
+            pc: progressPercentage,
+          }));
+        }
+      },
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
 
-      setMsg("Upload successful");
-      setFileInfo(uploadResponse.data.file); // Save file metadata
-      console.log("Upload response:", uploadResponse.data);
-
-      // Automatically call the process endpoint
-      const { filename } = uploadResponse.data.file;
-      setMsg("Processing file...");
-      const processResponse = await api.post(`/process/${filename}`);
-      setMsg("File processed successfully");
-      console.log("Process response:", processResponse.data);
-    } catch (error) {
-      setMsg("Upload or processing failed");
+    setMsg("File uploaded and processed successfully!");
+    setFileInfo(uploadResponse.data.file); // Save file metadata
+    console.log("Upload response:", uploadResponse.data);
+  } catch (error) {
+    setMsg("Upload or processing failed");
+    if (axios.isAxiosError(error)) {
       console.error(error.response?.data || error.message);
+    } else {
+      console.error(error);
     }
-  };
+  }
+};
+
+
 
   // Fetches the file status
   const fetchFileStatus = async () => {
     setMsg("Fetching file status...");
     try {
-      const response = await api.get("/file-status");
+      const response = await api.get("/files/file-status");
       setMsg("File status fetched successfully");
       console.log("File status:", response.data);
     } catch (error) {
       setMsg("Error fetching file status");
-      console.error(error.response?.data || error.message);
+      if (axios.isAxiosError(error)) {
+        console.error(error.response?.data || error.message);
+      } else {
+        console.error(error);
+      }
     }
   };
 

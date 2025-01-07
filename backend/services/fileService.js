@@ -1,63 +1,64 @@
-import fs from 'fs';
-import path from 'path';
-import AdmZip from 'adm-zip';
+import mongoose from 'mongoose';
+import { GridFSBucket } from 'mongodb';
 
-// Define the directories for uploads and extraction
-const UPLOAD_DIR = path.join(process.cwd(), 'uploads'); // Ensure 'uploads' is in the project root
-const EXTRACT_DIR = path.join(process.cwd(), 'extracted'); // Ensure 'extracted' is in the project root
-const FILE_LOG_PATH = path.join(UPLOAD_DIR, 'file-log.json'); // Log file stored in 'uploads'
-
-// Ensure required directories exist
-[UPLOAD_DIR, EXTRACT_DIR].forEach((dir) => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
+// MongoDB connection
+const mongoURI = 'mongodb+srv://dkazzoun:dkazzoun@magneto.q1ry4.mongodb.net/Main';
+const conn = mongoose.createConnection(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 });
 
-// Save File Information
-// Stores metadata of the uploaded file into 'file-log.json'
-export const saveFileInfo = async (file) => {
+// Initialize GridFS Bucket
+let gfsBucket;
+conn.once('open', () => {
+  gfsBucket = new GridFSBucket(conn.db, { bucketName: 'files' });
+});
+
+// Save File Metadata
+// Save File Metadata with the updated schema
+export const saveFileInfo = async (file, userId = null, appId = null, testId = null) => {
   const fileInfo = {
-    filename: file.filename,
-    originalName: file.originalname,
-    path: file.path,
-    timestamp: Date.now(),
+    fileName: file.filename,
+    fileType: file.mimetype,
+    uploadDate: new Date(),
+    userId: userId || null, // Optional: Reference to the user who uploaded the file
+    metadata: {
+      appId: appId || null, // Optional: Reference to the associated app
+      testId: testId || null, // Optional: Reference to the associated test
+    },
   };
 
-  fs.writeFileSync(FILE_LOG_PATH, JSON.stringify(fileInfo, null, 2)); // Write file info to log
-  return fileInfo;
+  const Files = conn.db.collection('Files');
+  const result = await Files.insertOne(fileInfo); // Insert metadata into MongoDB
+  return result.ops[0];
 };
 
-// Process File
-// Unzips the specified file into a subdirectory within the 'extracted' folder
-export const processFile = async (filename) => {
-  const zipPath = path.join(UPLOAD_DIR, filename); // Path to the ZIP file in 'uploads'
-  const extractPath = path.join(EXTRACT_DIR, path.parse(filename).name); // Subdirectory in 'extracted'
 
-  // Check if the ZIP file exists
-  if (!fs.existsSync(zipPath)) {
+// Process File
+export const processFile = async (filename) => {
+  const Files = conn.db.collection('Files');
+
+  const file = await Files.findOne({ filename });
+  if (!file) {
     throw new Error('File not found');
   }
 
-  // Ensure the extraction directory exists
-  if (!fs.existsSync(extractPath)) {
-    fs.mkdirSync(extractPath, { recursive: true });
-  }
+  // Create a readable stream for processing the file
+  const readStream = gfsBucket.openDownloadStreamByName(filename);
 
-  // Unzip the file
-  const zip = new AdmZip(zipPath);
-  zip.extractAllTo(extractPath, true); // Extract all contents to the directory
-
-  return extractPath; // Return the extraction path
+  // Placeholder for file processing logic
+  return { message: 'File processing simulated', file };
 };
 
 // Get File Status
-// Reads and returns metadata of the most recently uploaded file
 export const getFileStatus = async () => {
-  if (!fs.existsSync(FILE_LOG_PATH)) {
-    return null; // Return null if the log file doesn't exist
+  const Files = conn.db.collection('Files');
+
+  // Fetch the latest file metadata
+  const fileInfo = await Files.find().sort({ uploadDate: -1 }).limit(1).toArray();
+  if (fileInfo.length === 0) {
+    return null;
   }
 
-  const fileInfo = JSON.parse(fs.readFileSync(FILE_LOG_PATH)); // Read and parse log file
-  return fileInfo;
+  return fileInfo[0];
 };
