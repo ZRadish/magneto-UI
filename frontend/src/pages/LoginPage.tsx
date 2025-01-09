@@ -8,33 +8,49 @@ import api from "../utils/api.ts";
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const isLoading = false;
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     console.log("Name:", email);
-    const response = await api.post("/user/login", {
-      email,
-      password,
-      isVerified: false, // Set default value
-    });
+    try {
+      const response = await api.post("/user/login", {
+        email,
+        password,
+        isVerified: false, // Set default value
+      });
 
-    const data = response.data;
+      console.log("API Response Data:", response.data);
 
-    if (data.error) {
-      setError(data.error);
-    } else {
-      // Handle successful registration (e.g., redirect to login or show success message)
-      console.log("Login successful:", data);
-      navigate("/");
+      const data = response.data;
+      const { user } = response.data || {};
+
+      const userId = user.id;
+      const username = user.firstName;
+      if (data.error) {
+        setError(data.error);
+      } else {
+        // Handle successful registration (e.g., redirect to login or show success message)
+        localStorage.setItem("UserId", userId);
+        console.log("Logged in User ID:", userId);
+        localStorage.setItem("username", username);
+        console.log("Logged in username:", username);
+        console.log("Login successful:");
+        //navigate("/dashboard");
+        console.log("Login successful:", data);
+        navigate("/");
+      }
+    } catch (err) {
+      setError("An error occured. Please try again.");
     }
   };
 
   return (
+    //bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity
     <div
-      className="min-h-screen bg-gradient-to-br 
-      from-gray-900 via-green-900 to-emerald-900 flex items-center
+      className="min-h-screen bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 flex items-center
       justify-center relative overflow-hidden"
     >
       <motion.div
@@ -44,7 +60,7 @@ const LoginPage = () => {
         className="max-w-md w-full bg-gray-800 bg-opacity-50 backdrop-filter backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden"
       >
         <div className="p-8">
-          <h2 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-green-400 to-emerald-500 text-transparent bg-clip-text">
+          <h2 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r text-gray-200 bg-clip-text">
             Welcome Back
           </h2>
 
@@ -63,10 +79,13 @@ const LoginPage = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            {error && (
+              <p className="text-sm mb-2 text-red-500 mt-[-12px]">{error}</p> // Display error message in red
+            )}
             <div className="flex items-center mb-6">
               <Link
                 to="/forgot-password"
-                className="text-sm text-green-400 hover:underline"
+                className="text-sm text-gray-200 hover:underline"
               >
                 Forgot Password?
               </Link>
@@ -74,9 +93,9 @@ const LoginPage = () => {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold
-              rounded-lg shadow-lg hover:from-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2
-              focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition duration-200"
+              className="w-full py-3 px-4 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 font-bold
+              rounded-lg shadow-lg hover:opacity-90 transition-opacity focus:outline-none focus:ring-2
+              focus:ring-gray-200 focus:ring-offset-2 focus:ring-offset-gray-900 transition duration-200"
               type="submit"
               disabled={isLoading}
             >
@@ -91,7 +110,7 @@ const LoginPage = () => {
         <div className="px-8 py-4 bg-gray-900 bg-opacity-50 flex justify-center">
           <p className="text-sm text-gray-400">
             Don't have an account?{" "}
-            <Link to={"/signup"} className="text-green-400 hover:underline">
+            <Link to={"/signup"} className="text-gray-200 hover:underline">
               Signup
             </Link>
           </p>
