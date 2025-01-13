@@ -57,7 +57,7 @@ const SignUpPage = () => {
     } else {
       // Handle successful registration (e.g., redirect to login or show success message)
       console.log("Registration successful:", data);
-      localStorage.setItem("UserId", data.user.id);
+     // localStorage.setItem("UserId", data.user.id);
       //   console.log("userid::", data.UserId);
       //localStorage.setItem("UserId", data.UserId);
       // navigate("/verify-email", { state: { UserId: data.UserId } }); //Navigate to email verification page
