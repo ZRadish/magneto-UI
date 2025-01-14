@@ -7,7 +7,7 @@ import EmailVerificationPage from "./pages/EmailVerificationPage";
 import FileUploadPage from "./pages/FileUploadPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
-import DashboardPage from "./pages/DashboardPage";
+import DashboardPage from "./dashboard/DashboardPage";
 
 const App = () => {
   return (
