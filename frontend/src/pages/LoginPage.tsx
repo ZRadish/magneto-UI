@@ -38,9 +38,9 @@ const LoginPage = () => {
         localStorage.setItem("username", username);
         console.log("Logged in username:", username);
         console.log("Login successful:");
-        //navigate("/dashboard");
+        navigate("/dashboard");
         console.log("Login successful:", data);
-        navigate("/");
+        //navigate("/");
       }
     } catch (err) {
       setError("An error occured. Please try again.");
