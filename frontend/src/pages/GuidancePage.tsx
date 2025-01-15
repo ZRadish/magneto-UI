@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Play, Download, Save } from "lucide-react";
 import { Folder, ChevronDown, ChevronRight } from "lucide-react";
+import Joyride, { STATUS } from "react-joyride";
 import SideBar from "../components/SideBar";
 
 interface AppTest {
@@ -22,7 +23,8 @@ interface App {
 const AppRow: React.FC<{
   app: App;
   onUpdateNotes: (testId: string, newNotes: string) => void;
-}> = ({ app, onUpdateNotes }) => {
+  setModalOpen: (isOpen: boolean) => void;
+}> = ({ app, onUpdateNotes, setModalOpen }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeModal, setActiveModal] = useState<{
     type: "notes" | "results";
@@ -43,6 +45,7 @@ const AppRow: React.FC<{
 
   const openModal = (type: "notes" | "results", testId: string) => {
     setActiveModal({ type, testId });
+    setModalOpen(true);
     if (type === "notes") {
       const test = app.tests.find((t) => t.id === testId);
       setEditableNotes(test?.notes || "");
@@ -61,6 +64,7 @@ const AppRow: React.FC<{
       <div
         className="flex items-center p-4 cursor-pointer bg-gray-900"
         onClick={() => setIsExpanded(!isExpanded)}
+        id="app-row"
       >
         <Folder className="mr-2 text-violet-500" size={20} />
         <span className="flex-grow text-gray-400">{app.name}</span>
@@ -97,6 +101,7 @@ const AppRow: React.FC<{
                   </td>
                   <td className="p-2">
                     <button
+                      id="view-notes-btn"
                       className="text-violet-500 hover:text-violet-400 transition-colors"
                       onClick={() => openModal("notes", test.id)}
                     >
@@ -106,12 +111,14 @@ const AppRow: React.FC<{
                   <td className="p-2">
                     <div className="flex items-center gap-2">
                       <button
+                        id="view-results-btn"
                         className="text-violet-500 hover:text-violet-400 transition-colors"
                         onClick={() => openModal("results", test.id)}
                       >
                         View Results
                       </button>
                       <button
+                        id="download-btn"
                         className="text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20"
                         onClick={(e) => handleDownload(e, test)}
                         title="Download Results"
@@ -173,6 +180,52 @@ const AppRow: React.FC<{
 
 const GuidancePage: React.FC = () => {
   const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [runTourOnMount, setRunTourOnMount] = useState(true);
+
+  // Joyride steps
+  const steps = [
+    {
+      target: "#run-test-btn",
+      content:
+        "Click here to start a new test. This will let you select which oracles to test for your application.",
+      disableBeacon: true,
+    },
+    {
+      target: "#app-row",
+      content: "Click on an app to expand and see all its test results.",
+    },
+    {
+      target: "#view-notes-btn",
+      content:
+        "View and edit notes for each test run. This helps track important observations.",
+    },
+    {
+      target: "#view-results-btn",
+      content: "View detailed results from your test run.",
+    },
+    {
+      target: "#download-btn",
+      content: "Download the test results for offline viewing or sharing.",
+    },
+  ];
+
+  const handleJoyrideCallback = (data: any) => {
+    const { status } = data;
+    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
+      // Store in localStorage that the user has seen the tour
+      localStorage.setItem("hasSeenTour", "true");
+    }
+  };
+
+  // Check if user has seen tour before
+  React.useEffect(() => {
+    const hasSeenTour = localStorage.getItem("hasSeenTour");
+    if (hasSeenTour) {
+      setRunTourOnMount(false);
+    }
+  }, []);
+
   const [apps, setApps] = useState<App[]>([
     {
       id: "1",
@@ -225,6 +278,23 @@ const GuidancePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 to-gray-950">
+      <Joyride
+        steps={steps}
+        run={runTourOnMount}
+        continuous
+        showProgress
+        showSkipButton
+        callback={handleJoyrideCallback}
+        styles={{
+          options: {
+            primaryColor: "#8B5CF6",
+            backgroundColor: "#1F2937",
+            textColor: "#F3F4F6",
+            arrowColor: "#1F2937",
+            overlayColor: "rgba(0, 0, 0, 0.5)",
+          },
+        }}
+      />
       <SideBar />
       <div className="ml-64 p-8">
         <div className="flex justify-between items-center mb-8">
@@ -235,6 +305,7 @@ const GuidancePage: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-400">Apps:</h2>
           </div>
           <button
+            id="run-test-btn"
             onClick={() => navigate("/run-test")}
             className="px-6 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2"
           >
@@ -245,7 +316,12 @@ const GuidancePage: React.FC = () => {
 
         <div className="space-y-4">
           {apps.map((app) => (
-            <AppRow key={app.id} app={app} onUpdateNotes={handleUpdateNotes} />
+            <AppRow
+              key={app.id}
+              app={app}
+              onUpdateNotes={handleUpdateNotes}
+              setModalOpen={setIsModalOpen}
+            />
           ))}
         </div>
       </div>
