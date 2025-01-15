@@ -25,45 +25,51 @@ const SignUpPage = () => {
     setPasswordValid(isStrongPassword); //Update state based on password strength
   };
 
-  const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError("");
-    console.log("Name:", firstName);
+ const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  setError("");
 
-    if (!firstName || !lastName || !email || !password) {
-      setError("Must populate all fields");
-      return;
-    }
+  if (!firstName || !lastName || !email || !password) {
+    setError("All fields are required.");
+    return;
+  }
 
-    //If password is not valid, prevent form submission
-    if (!PasswordValid) {
-      setError("Password must meet all strength requirements.");
-      return;
-    }
+  if (!PasswordValid) {
+    setError("Password must meet all strength requirements.");
+    return;
+  }
 
-    const response = await api.post("/user/register", {
-      firstName,
-      lastName,
-      email,
-      password,
-      isVerified: false, // Set default value
-    });
+  try {
+    // Step 1: Register the user
+    const response = await api.post("/user/register", { firstName, lastName, email, password });
+
+    // Log the API response for debugging
+    console.log("Register API Response:", response);
 
     const data = response.data;
-    console.log("API Response Data:", data);
 
     if (data.error) {
       setError(data.error);
-    } else {
-      // Handle successful registration (e.g., redirect to login or show success message)
-      console.log("Registration successful:", data);
-     // localStorage.setItem("UserId", data.user.id);
-      //   console.log("userid::", data.UserId);
-      //localStorage.setItem("UserId", data.UserId);
-      // navigate("/verify-email", { state: { UserId: data.UserId } }); //Navigate to email verification page
-      navigate("/verify-email");
+      return;
     }
-  };
+
+    localStorage.setItem("userId", data.user.id);
+
+    // Log the user object to check if `id` exists
+    console.log("User Data:", data.user);
+
+    // Step 2: Trigger email verification
+    await api.post("/user/email/verify", {
+      id: data.user.id, // Ensure `id` exists in the response
+      email: data.user.email,
+    });
+
+    navigate("/verify-email");
+  } catch (error) {
+    console.error("Error during signup:", error);
+    setError("An error occurred during registration.");
+  }
+};
 
   useEffect(() => {
     validatePassword(password); //Initial validation

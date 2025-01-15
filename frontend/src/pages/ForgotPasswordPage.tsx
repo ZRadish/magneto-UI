@@ -2,48 +2,33 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import Input from "../components/Input";
 import { ArrowLeft, Mail } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-
-const apiUrl = import.meta.env.VITE_API_URL;
+import { Link } from "react-router-dom";
+import api from "../utils/api"; // Ensure this points to your API utility file
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState("");
-  const navigate = useNavigate();
 
-  const handleSubmit = async (e: { preventDefault: () => void }) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
+
     try {
-      const response = await fetch(`${apiUrl}api/forgotpasswordverification`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ Email: email }),
+      const response = await api.post("/user/password/forgot", {
+        email,
       });
 
-      if (!response.ok) {
-        // If the response is not OK (status code other than 2xx), throw an error
-        throw new Error(`Failed to send reset link: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      if (data.error) {
-        setError(data.error); // Show error if any
+      if (response.data.success) {
+        setIsSubmitted(true); // Mark as submitted on success
       } else {
-        localStorage.setItem("UserId", data.UserId);
-        setIsSubmitted(true); // Successfully submitted, show confirmation
-        // Optionally, redirect to the verification page (if you want to automate this step)
-        navigate("/verify-email", {
-          state: { UserId: data.UserId, fromForgotPassword: true },
-        });
+        setError(response.data.error || "Failed to send reset link.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error during forgot password request:", err);
-      setError("An error occurred during the password reset process.");
+      setError(
+        err.response?.data?.error || "An error occurred. Please try again."
+      );
     }
   };
 
@@ -66,7 +51,7 @@ const ForgotPasswordPage = () => {
           {!isSubmitted ? (
             <form onSubmit={handleSubmit}>
               <p className="text-gray-300 mb-6 text-center">
-                Enter your email address and we'll send you a link to reset your
+                Enter your email address and we'll send you a code to reset your
                 password.
               </p>
               <Input
@@ -78,7 +63,7 @@ const ForgotPasswordPage = () => {
                 required
               />
               {error && (
-                <p className="text-sm text-red-500 mb-2">{error}</p> // Ensure error is styled with red text
+                <p className="text-sm text-red-500 mb-2">{error}</p>
               )}
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -89,11 +74,6 @@ const ForgotPasswordPage = () => {
                 type="submit"
               >
                 Submit
-                {/*isLoading ? (
-                <Loader className="size-6 animate-spin mx-auto" />
-              ) : (
-                "Send Reset Link"
-              )*/}
               </motion.button>
             </form>
           ) : (
@@ -108,7 +88,7 @@ const ForgotPasswordPage = () => {
               </motion.div>
               <p className="text-gray-300 mb-6">
                 If an account exists for {email}, you will receive a password
-                reset link shortly.
+                reset code shortly.
               </p>
             </div>
           )}
@@ -126,4 +106,5 @@ const ForgotPasswordPage = () => {
     </div>
   );
 };
+
 export default ForgotPasswordPage;

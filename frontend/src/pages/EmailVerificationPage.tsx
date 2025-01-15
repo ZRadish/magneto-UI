@@ -1,17 +1,18 @@
 import React, { useRef, useState, useEffect, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import api from "../utils/api"; 
 
 const EmailVerificationPage: React.FC = () => {
   const [code, setCode] = useState<string[]>(["", "", "", "", "", ""]);
+  const [error, setError] = useState<string>(""); // To display error messages
+  const [isLoading, setIsLoading] = useState<boolean>(false); // For loading state
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const navigate = useNavigate();
-  const isLoading = false;
 
   const handleChange = (index: number, value: string) => {
     const newCode = [...code];
 
-    // Handle pasted content
     if (value.length > 1) {
       const pastedCode = value.slice(0, 6).split("");
       for (let i = 0; i < pastedCode.length; i++) {
@@ -21,17 +22,15 @@ const EmailVerificationPage: React.FC = () => {
       }
       setCode(newCode);
 
-      // Focus on the next empty input or the last filled one
       const nextIndex =
         newCode.findIndex((digit) => digit === "") !== -1
           ? newCode.findIndex((digit) => digit === "")
-          : newCode.length - 1; // Focus the last input if all are filled
+          : newCode.length - 1;
       inputRefs.current[nextIndex]?.focus();
     } else {
       newCode[index] = value;
       setCode(newCode);
 
-      // Move focus to the next input field if value is entered
       if (value && index < 5) {
         inputRefs.current[index + 1]?.focus();
       }
@@ -47,14 +46,36 @@ const EmailVerificationPage: React.FC = () => {
     }
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const verificationCode = code.join("");
-    console.log(`Verification code submitted: ${verificationCode}`);
-    // Add API call here
-  };
+    const verificationCode = code.join(""); // Combine all input values
+    setError("");
+    setIsLoading(true);
 
-  // Auto submit when all fields are filled
+    try {
+      const userId = localStorage.getItem("userId"); // Retrieve the userId stored during registration
+      if (!userId) {
+        setError("User ID not found. Please register again.");
+        return;
+      }
+
+      const response = await api.post("/user/email/verify-token", {
+        id: userId, // Use the stored `id`
+        token: verificationCode,
+      });
+
+      if (response.data.success) {
+        navigate("/login");
+      } else {
+        setError(response.data.error || "Verification failed. Please try again.");
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  // Automatically submit when all fields are filled
   useEffect(() => {
     if (code.every((digit) => digit !== "")) {
       handleSubmit(new Event("submit") as any);
@@ -94,6 +115,9 @@ const EmailVerificationPage: React.FC = () => {
               />
             ))}
           </div>
+          {error && (
+            <p className="text-sm text-red-500 text-center mt-4">{error}</p>
+          )}
 
           <motion.button
             whileHover={{ scale: 1.05 }}
