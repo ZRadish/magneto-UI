@@ -8,11 +8,7 @@ interface AppTest {
   id: string;
   name: string;
   dateTime: string;
-  oracles: {
-    language: string;
-    theme: string;
-    orientation: string;
-  };
+  oracles: string[]; // Changed to array of oracle types that were tested
   notes: string;
   results: string;
 }
@@ -35,7 +31,7 @@ const AppRow: React.FC<{
   const [editableNotes, setEditableNotes] = useState("");
 
   const handleDownload = (e: React.MouseEvent, test: AppTest) => {
-    e.stopPropagation(); // Prevent triggering other click events
+    e.stopPropagation();
     const element = document.createElement("a");
     const file = new Blob([test.results], { type: "text/plain" });
     element.href = URL.createObjectURL(file);
@@ -82,7 +78,7 @@ const AppRow: React.FC<{
               <tr className="text-left text-gray-400">
                 <th className="p-2">Test</th>
                 <th className="p-2">Date/Time</th>
-                <th className="p-2">Oracles</th>
+                <th className="p-2">Oracles Tested</th>
                 <th className="p-2">Notes</th>
                 <th className="p-2">Results</th>
               </tr>
@@ -94,9 +90,9 @@ const AppRow: React.FC<{
                   <td className="p-2">{test.dateTime}</td>
                   <td className="p-2">
                     <div className="space-y-1">
-                      <div>Language: {test.oracles.language}</div>
-                      <div>Theme: {test.oracles.theme}</div>
-                      <div>Orientation: {test.oracles.orientation}</div>
+                      {test.oracles.map((oracle, index) => (
+                        <div key={index}>{oracle}</div>
+                      ))}
                     </div>
                   </td>
                   <td className="p-2">
@@ -175,7 +171,7 @@ const AppRow: React.FC<{
   );
 };
 
-const Dashboard: React.FC = () => {
+const GuidancePage: React.FC = () => {
   const navigate = useNavigate();
   const [apps, setApps] = useState<App[]>([
     {
@@ -186,13 +182,17 @@ const Dashboard: React.FC = () => {
           id: "1",
           name: "12.zip",
           dateTime: "2024-01-14 10:00",
-          oracles: {
-            language: "English",
-            theme: "Dark",
-            orientation: "LTR",
-          },
+          oracles: ["Language", "Theme"], // Only showing which oracles were tested
           notes: "Test notes for App 1",
           results: "Test results for App 1",
+        },
+        {
+          id: "2",
+          name: "13.zip",
+          dateTime: "2024-01-14 10:00",
+          oracles: ["Language", "Orientation"], // Different combination of oracles
+          notes: "Test notes for App 1 test 2",
+          results: "Test results for App 1 test 2",
         },
       ],
     },
@@ -204,11 +204,7 @@ const Dashboard: React.FC = () => {
           id: "2",
           name: "34.zip",
           dateTime: "2024-01-14 12:00",
-          oracles: {
-            language: "",
-            theme: "",
-            orientation: "LTR",
-          },
+          oracles: ["Theme", "Orientation"], // Another combination
           notes: "",
           results: "Test results for App 2",
         },
@@ -257,4 +253,4 @@ const Dashboard: React.FC = () => {
   );
 };
 
-export default Dashboard;
+export default GuidancePage;
