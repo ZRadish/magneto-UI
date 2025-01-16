@@ -2,13 +2,14 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import Input from "../components/Input";
 import { ArrowLeft, Mail } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../utils/api"; // Ensure this points to your API utility file
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -19,8 +20,14 @@ const ForgotPasswordPage = () => {
         email,
       });
 
+      console.log("user: ", response);
+
       if (response.data.success) {
-        setIsSubmitted(true); // Mark as submitted on success
+        localStorage.setItem("UserId", response.data.UserId);
+        setIsSubmitted(true);
+        navigate("/verify-email", {
+          state: { UserId: response.data.UserId, fromForgotPassword: true },
+        });
       } else {
         setError(response.data.error || "Failed to send reset link.");
       }
@@ -62,9 +69,7 @@ const ForgotPasswordPage = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
-              {error && (
-                <p className="text-sm text-red-500 mb-2">{error}</p>
-              )}
+              {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}

@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import api from "../utils/api"; 
+import api from "../utils/api";
 
 const EmailVerificationPage: React.FC = () => {
   const [code, setCode] = useState<string[]>(["", "", "", "", "", ""]);
@@ -9,6 +9,7 @@ const EmailVerificationPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false); // For loading state
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const navigate = useNavigate();
+  const { state } = useLocation();
 
   const handleChange = (index: number, value: string) => {
     const newCode = [...code];
@@ -65,12 +66,20 @@ const EmailVerificationPage: React.FC = () => {
       });
 
       if (response.data.success) {
-        navigate("/login");
+        if (state?.fromForgotPassword) {
+          navigate("/reset-password", { state: { userId } });
+        } else {
+          navigate("/login");
+        }
       } else {
-        setError(response.data.error || "Verification failed. Please try again.");
+        setError(
+          response.data.error || "Verification failed. Please try again."
+        );
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || "Something went wrong. Please try again.");
+      setError(
+        err.response?.data?.error || "Something went wrong. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
