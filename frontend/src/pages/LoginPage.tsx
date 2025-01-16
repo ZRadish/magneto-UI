@@ -12,40 +12,31 @@ const LoginPage = () => {
   const isLoading = false;
   const navigate = useNavigate();
 
+  
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     console.log("Name:", email);
     try {
-      const response = await api.post("/user/login", {
-        email,
-        password,
-        isVerified: false, // Set default value
-      });
-
+      const response = await api.post("/user/login", { email, password });
+  
       console.log("API Response Data:", response.data);
-
-      const data = response.data;
-      const { user } = response.data || {};
-
-      const userId = user.id;
-      const username = user.firstName;
-      if (data.error) {
-        setError(data.error);
+  
+      const { user, token } = response.data; // Extract token and user
+      if (response.data.error) {
+        setError(response.data.error);
       } else {
-        // Handle successful registration (e.g., redirect to login or show success message)
-        localStorage.setItem("UserId", userId);
-        console.log("Logged in User ID:", userId);
-        localStorage.setItem("username", username);
-        console.log("Logged in username:", username);
-        console.log("Login successful:");
+        localStorage.setItem("authToken", token); // Store token
+        localStorage.setItem("UserId", user.id); // Store user ID (optional)
+        localStorage.setItem("username", user.firstName); // Store username (optional)
+  
+        console.log("Token stored:", token);
         navigate("/dashboard");
-        console.log("Login successful:", data);
-        //navigate("/");
       }
     } catch (err) {
-      setError("An error occured. Please try again.");
+      setError("An error occurred. Please try again.");
     }
   };
+  
 
   return (
     //bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity
