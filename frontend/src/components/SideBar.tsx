@@ -31,6 +31,14 @@ const SideBar = () => {
   }, []);
 
   useEffect(() => {
+    if (location.pathname === "/tutorial") {
+      setIsOpen(false);
+      containerControls.start("close");
+      svgControls.start("close");
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
     if (isOpen) {
       containerControls.start("open");
       svgControls.start("open");
@@ -64,7 +72,7 @@ const SideBar = () => {
 
   const handleTutorialClick = () => {
     navigate("/tutorial");
-    setIsOpen(true);
+    setIsOpen(false);
   };
 
   const handleGuidanceClick = () => {
