@@ -484,7 +484,7 @@ const TutorialPage = () => {
                 </p>
               </div>
             </div>
-            <div className="w-full max-w-2xl mb-8 mx-auto flex justify-center">
+            <div className="bg-slate-800 rounded-lg p-2 border border-violet-500/20">
               <img
                 src="https://mwll8uma09.ufs.sh/f/vHcR0snYouj7GVORftYomQTPSghC4IqV396vWYZpc1rDyXwL"
                 alt="Correct system selection"
@@ -516,7 +516,8 @@ const TutorialPage = () => {
             <p className="text-gray-300 leading-relaxed mb-6">
               Below is an example:
             </p>
-            <div className="w-full max-w-2xl mb-8 mx-auto flex justify-center">
+
+            <div className="w-full max-w-2xl mb-8 mx-auto flex justify-center bg-slate-800 rounded-lg p-2 border border-violet-500/20">
               <img
                 src="https://mwll8uma09.ufs.sh/f/vHcR0snYouj7FZxig1rw6G1m3KC5hUVQYzjTJBkPScLf8ZsR"
                 alt="Multiple path selection"
