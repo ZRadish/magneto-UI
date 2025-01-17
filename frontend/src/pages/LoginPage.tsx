@@ -102,6 +102,6 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
-function setError(error: any) {
+function setError(_error: any) {
   throw new Error("Function not implemented.");
 }

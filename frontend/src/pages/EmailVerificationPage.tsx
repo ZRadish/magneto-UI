@@ -1,11 +1,11 @@
 import React, { useRef, useState, useEffect, FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
 const EmailVerificationPage: React.FC = () => {
   const [code, setCode] = useState<string[]>(["", "", "", "", "", ""]);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const isLoading = false;
 
   const handleChange = (index: number, value: string) => {

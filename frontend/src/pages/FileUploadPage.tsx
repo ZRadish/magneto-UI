@@ -14,12 +14,12 @@ const FileUploadPage: React.FC = () => {
   const isLoading = false; //Define loading state for the button
 
   // Handles file selection
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = e.target.files;
-    if (selectedFiles) {
-      setFiles(selectedFiles); // Set the selected files to state
-    }
-  };
+  // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const selectedFiles = e.target.files;
+  //   if (selectedFiles) {
+  //     setFiles(selectedFiles); // Set the selected files to state
+  //   }
+  // };
 
   // Handles file deletion (removes file from the selection)
   const handleDeleteFile = (index: number) => {
@@ -29,7 +29,7 @@ const FileUploadPage: React.FC = () => {
     const updatedFiles = Array.from(files).filter((_, i) => i !== index);
 
     // Update the files state
-    setFiles(updatedFiles as FileList);
+    setFiles(updatedFiles as unknown as FileList);
   };
 
   const handleUpload = () => {
