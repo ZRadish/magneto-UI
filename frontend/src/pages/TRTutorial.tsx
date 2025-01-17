@@ -627,7 +627,7 @@ const TutorialPage = () => {
               </h2>
             </div>
 
-            <p className="text-gray-300 leading-relaxed mb-6">
+            <p className="text-gray-300 leading-relaxed mb-4">
               Run the following command to run trace-replayer.jar:
             </p>
 
