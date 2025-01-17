@@ -229,6 +229,24 @@ const Dashboard: React.FC = () => {
       name: "App 2",
       tests: [
         {
+          id: "2",
+          name: "34.zip",
+          dateTime: "2024-01-14 12:00",
+          oracles: {
+            language: "",
+            theme: "",
+            orientation: "LTR",
+          },
+          notes: "",
+          results: "Test results for App 2",
+        },
+      ],
+    },
+    {
+      id: "2",
+      name: "App 2",
+      tests: [
+        {
           id: "1",
           name: "13.zip",
           dateTime: "2024-01-14 11:00",
