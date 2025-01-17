@@ -85,16 +85,16 @@ const TutorialPage = () => {
       // Get the viewport height
       const viewportHeight = window.innerHeight;
 
-      // Calculate the desired scroll position that would center the element
+      // Calculate the desired scroll position with an offset to position it higher
       const scrollTop =
         window.pageYOffset || document.documentElement.scrollTop;
       const elementTop = elementRect.top + scrollTop;
-      const centerPosition =
-        elementTop - (viewportHeight - elementRect.height) / 2;
+      const offset = viewportHeight * 0.3; // Position it 30% from the top instead of 50%
+      const adjustedPosition = elementTop - offset;
 
       // Smooth scroll to the calculated position
       window.scrollTo({
-        top: centerPosition,
+        top: adjustedPosition,
         behavior: "smooth",
       });
     }
