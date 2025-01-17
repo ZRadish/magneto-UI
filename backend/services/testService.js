@@ -9,6 +9,7 @@ export const createTestService = async ({
   oraclesSelected,
   notes,
   dateTime,
+  fileId,
 }) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -17,6 +18,7 @@ export const createTestService = async ({
     // Convert IDs to ObjectId
     const appObjectId = new mongoose.Types.ObjectId(appId);
     const userObjectId = new mongoose.Types.ObjectId(userId);
+    const fileObjectId = new mongoose.Types.ObjectId(fileId);
 
     // Create the test
     const newTest = await Test.create(
@@ -28,6 +30,7 @@ export const createTestService = async ({
           oraclesSelected,
           notes,
           dateTime,
+          fileId: fileObjectId, // Include fileId
           createdAt: new Date(),
           status: 'pending', // Default status
           result: '', // Default result
@@ -54,15 +57,36 @@ export const createTestService = async ({
   }
 };
 
-
 export const getTestsByAppService = async (appId) => {
-  const appObjectId = new mongoose.Types.ObjectId(appId);
-
-  const tests = await Test.find({ appId: appObjectId });
-  if (!tests) throw new Error('No tests found for this app.');
-  return tests;
-};
-
+    const appObjectId = new mongoose.Types.ObjectId(appId);
+  
+    // Fetch all tests for the app
+    const tests = await Test.find({ appId: appObjectId });
+    if (!tests || tests.length === 0) throw new Error('No tests found for this app.');
+  
+    // Fetch filenames for associated fileIds
+    const testsWithFileNames = await Promise.all(
+      tests.map(async (test) => {
+        if (test.fileId) {
+          try {
+            // Query files.files collection to get the filename
+            const file = await mongoose.connection.db.collection('files.files').findOne({
+              _id: new mongoose.Types.ObjectId(test.fileId),
+            });
+            const fileName = file ? file.filename : 'Unknown';
+            return { ...test.toObject(), fileName };
+          } catch (error) {
+            console.error(`Error fetching file name for test ${test._id}: ${error.message}`);
+            return { ...test.toObject(), fileName: 'Unknown' };
+          }
+        }
+        return { ...test.toObject(), fileName: null }; // No file associated
+      })
+    );
+  
+    return testsWithFileNames;
+  };
+  
 
 export const deleteTestService = async (testId) => {
     const session = await mongoose.startSession();

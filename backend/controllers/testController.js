@@ -1,7 +1,7 @@
 import * as testService from '../services/testService.js';
 
 export const createTest = async (req, res) => {
-  const { appId, testName, oraclesSelected, notes, dateTime } = req.body;
+  const { appId, testName, oraclesSelected, notes, dateTime , fileId} = req.body;
   const userId = req.user.id; // Assuming the `authenticateToken` middleware is used and adds `user` to `req`
 
   try {
@@ -12,6 +12,7 @@ export const createTest = async (req, res) => {
       oraclesSelected,
       notes,
       dateTime,
+      fileId
     });
 
     res.status(201).json({ success: true, test });
@@ -22,18 +23,18 @@ export const createTest = async (req, res) => {
 };
 
 
-// Controller for fetching tests for a specific app
 export const getTestsByApp = async (req, res) => {
-  const { appId } = req.params;
-
-  try {
-    const tests = await testService.getTestsByAppService(appId);
-    res.status(200).json({ success: true, tests });
-  } catch (error) {
-    console.error('[CONTROLLER] Error in getTestsByApp:', error.message);
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
+    const { appId } = req.params;
+  
+    try {
+      const tests = await testService.getTestsByAppService(appId);
+      res.status(200).json({ success: true, tests });
+    } catch (error) {
+      console.error('[CONTROLLER] Error in getTestsByApp:', error.message);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  };
+  
 
 // Controller for deleting a test
 export const deleteTest = async (req, res) => {

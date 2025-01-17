@@ -5,6 +5,7 @@ const testSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Reference to the associated User
   testName: { type: String, required: true }, // Name of the test
   oraclesSelected: { type: [String], default: [] }, // Oracles selected for the test
+  fileId: { type: mongoose.Schema.Types.ObjectId, ref: 'File', required: true }, // Associated file ID
   status: { 
     type: String, 
     enum: ['completed', 'pending'], 
