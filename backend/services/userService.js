@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import User from '../models/userModel.js';
 import sgMail from '@sendgrid/mail'; // Import SendGrid for email
 import crypto from 'crypto'; // For generating tokens
+import mongoose from 'mongoose';
+
 
 dotenv.config(); // Load environment variables
 sgMail.setApiKey(process.env.SENDGRID_API_KEY); // Set SendGrid API key
@@ -123,7 +125,6 @@ export const emailVerificationService = async (userId, email) => {
   return { success: true };
 };
 
-// Forgot password service
 export const forgotPasswordService = async (email) => {
   const user = await User.findOne({ email });
   if (!user) throw new Error('No account found with that email');
@@ -132,13 +133,21 @@ export const forgotPasswordService = async (email) => {
   user.verificationToken = resetToken;
   await user.save();
 
+  console.log('[SERVICE] Generated resetToken:', resetToken);
+  console.log('[SERVICE] UserId (_id):', user._id);
+
   await sendEmail(email, 'Reset Your Password', 'd-221335c49e0c4f3493664c326579d1cc', {
     firstName: user.firstName,
     verificationCode: resetToken,
   });
 
-  return { success: true };
+  return {
+    success: true,
+    userId: user._id.toString(), // Correctly map `_id` to `userId`
+  };
 };
+
+
 
 // Verify email token service
 export const verifyEmailTokenService = async (userId, token) => {
@@ -155,24 +164,22 @@ export const verifyEmailTokenService = async (userId, token) => {
 // Reset password service
 export const resetPasswordService = async (userId, newPassword) => {
   try {
-    // Find the user by ID
-    const user = await User.findById(userId);
+    const userObjectId = new mongoose.Types.ObjectId(userId); // Convert string to ObjectId
+
+    const user = await User.findById(userObjectId);
     if (!user) {
-      throw new Error('User not found');
+      throw new Error("User not found.");
     }
 
-    // Hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update the user's password
     user.password = hashedPassword;
-
-    // Clear the verification token (if applicable)
-    user.verificationToken = '';
     await user.save();
 
-    return { success: true, message: 'Password reset successfully' };
+    console.log("[SERVICE] Password updated successfully for user:", userId);
+    return { success: true, message: "Password reset successfully." };
   } catch (error) {
+    console.error("[SERVICE] Error in resetPasswordService:", error.message);
     throw new Error(error.message);
   }
 };
+

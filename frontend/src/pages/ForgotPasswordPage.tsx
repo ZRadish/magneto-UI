@@ -14,22 +14,26 @@ const ForgotPasswordPage = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
-
+  
     try {
       const response = await api.post("/user/password/forgot", {
         email,
       });
-
-      console.log("user: ", response);
-
-      if (response.data.success) {
-        localStorage.setItem("UserId", response.data.UserId);
-        setIsSubmitted(true);
+  
+      console.log("Response from forgot password:", response);
+  
+      const { success, userId, error } = response.data;
+  
+      if (success) {
+        // Save `_id` from the response to localStorage
+        localStorage.setItem("userId", userId);
+  
+        // Navigate to the email verification page with the `userId`
         navigate("/verify-email", {
-          state: { UserId: response.data.UserId, fromForgotPassword: true },
+          state: { userId, fromForgotPassword: true },
         });
       } else {
-        setError(response.data.error || "Failed to send reset link.");
+        setError(error || "Failed to send reset link.");
       }
     } catch (err: any) {
       console.error("Error during forgot password request:", err);
@@ -38,7 +42,8 @@ const ForgotPasswordPage = () => {
       );
     }
   };
-
+  
+  
   return (
     <div
       className="min-h-screen bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 flex items-center

@@ -15,6 +15,6 @@ router.post('/email/verify-token', userController.verifyEmailToken); // Verify e
 // Forgot password routes
 router.post('/password/forgot', userController.forgotPassword); // Send forgot password email
 // Reset password route
-router.post('/reset-password', userController.resetPassword);
+router.post('/password/reset', userController.resetPassword); // Endpoint for resetting password
 
 export default router;

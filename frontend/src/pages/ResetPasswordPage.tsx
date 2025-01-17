@@ -4,23 +4,24 @@ import { useNavigate, useLocation } from "react-router-dom";
 import Input from "../components/Input";
 import { Lock } from "lucide-react";
 import PasswordStrengthMeter from "../components/PasswordStrength";
+import api from "../utils/api";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 //make API call to reset password
 const resetPassword = async (userId: string, password: string) => {
-  const response = await api.post("/user/reset-password", {
-    UserId: userId,
-    Password: password, // Assumes userId is from token
-  });
+  try {
+    const response = await api.post('/user/password/reset', {
+      userId,
+      newPassword: password, // Sending the new password to the backend
+    });
 
-  console.log("Request body:", { userId, password });
-  const data = await response.json();
-  console.log("Response data:", data);
-  if (!response.ok) {
-    throw new Error(data.error || "Failed to reset password");
+    console.log('Password reset response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    throw error;
   }
-  return data;
 };
 
 const ResetPasswordPage = () => {
@@ -28,8 +29,9 @@ const ResetPasswordPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const navigate = useNavigate();
   const { state } = useLocation();
-  const [, setError] = useState("");
-  const userId = parseInt(localStorage.getItem("UserId") || "0", 10);
+  const [error, setError] = useState("");
+  const userId = localStorage.getItem("userId"); // Retrieve `UserId` directly as a string
+
   console.log("userId before sending request:", userId);
 
   const isPasswordStrong =
@@ -39,25 +41,28 @@ const ResetPasswordPage = () => {
     /\d/.test(password) &&
     /[^A-Za-z0-9]/.test(password);
 
-  const handleSubmit = async (e: { preventDefault: () => void }) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!isPasswordStrong) {
-      setError(
-        "Password must fulfill all requirements to reset your password."
-      );
+      setError("Password must fulfill all requirements to reset your password.");
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError("Passwords do not match.");
+      return;
+    }
+
+    if (!userId) {
+      setError("User ID not found. Please try the forgot password process again.");
       return;
     }
 
     try {
       await resetPassword(userId, password);
       setError("");
-      localStorage.removeItem("UserId");
+      localStorage.removeItem("userId");
 
       setTimeout(() => {
         if (state?.fromForgotPassword) {
@@ -69,7 +74,7 @@ const ResetPasswordPage = () => {
         }
       }, 2000);
     } catch (error) {
-      console.error(error);
+      console.error("Error resetting password:", error);
       setError("Error resetting password. Please try again.");
     }
   };

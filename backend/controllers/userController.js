@@ -1,5 +1,6 @@
 import User from '../models/userModel.js';
 import * as userService from '../services/userService.js';
+import mongoose from 'mongoose';
 
 // LOGIN API: Authenticates user based on email and password
 export const loginUser = async (req, res) => {
@@ -101,11 +102,13 @@ export const forgotPassword = async (req, res) => {
   const { email } = req.body;
   try {
     const result = await userService.forgotPasswordService(email);
-    res.status(200).json(result);
+    res.status(200).json({ success: true, userId: result.userId });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('[CONTROLLER] Error in forgotPassword:', error.message);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
+
 
 // Verify email token
 export const verifyEmailToken = async (req, res) => {
@@ -139,13 +142,17 @@ console.log("token",token);
 
 // Reset password controller
 export const resetPassword = async (req, res) => {
-  const { userId, password } = req.body;
+  const { userId, newPassword } = req.body;
 
   try {
-    // Call the service to reset the password
-    const result = await userService.resetPasswordService(userId, password);
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new Error("Invalid userId format. Must be a 24-character hex string.");
+    }
+
+    const result = await userService.resetPasswordService(userId, newPassword);
     res.status(200).json(result);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("[CONTROLLER] Error in resetPassword:", error.message);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
