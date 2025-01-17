@@ -79,20 +79,15 @@ const TutorialPage = () => {
   const scrollToSection = (id: string) => {
     const element = contentRefs.current[id];
     if (element) {
-      // Get the element's position relative to the viewport
       const elementRect = element.getBoundingClientRect();
-
-      // Get the viewport height
       const viewportHeight = window.innerHeight;
 
-      // Calculate the desired scroll position with an offset to position it higher
       const scrollTop =
         window.pageYOffset || document.documentElement.scrollTop;
       const elementTop = elementRect.top + scrollTop;
-      const offset = viewportHeight * 0.3; // Position it 30% from the top instead of 50%
+      const offset = viewportHeight * 0.3; //30% from the top
       const adjustedPosition = elementTop - offset;
 
-      // Smooth scroll to the calculated position
       window.scrollTo({
         top: adjustedPosition,
         behavior: "smooth",
