@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Play, Download, Save, Plus, Trash2 } from "lucide-react";
 import { Folder, ChevronDown, ChevronRight } from "lucide-react";
 import SideBar from "../components/SideBar";
+import axios from "axios";
 
 interface AppTest {
   id: string;
@@ -262,23 +263,49 @@ const Dashboard: React.FC = () => {
     },
   ]);
 
-  const handleCreateApp = () => {
+  const handleCreateApp = async () => {
     if (!newAppName || !description) {
-      return; // Do nothing if name or description is empty
+      return;
     }
 
-    // Create a new app folder
-    const newApp: App = {
-      id: (apps.length + 1).toString(), // Ensure unique ID
-      name: newAppName,
-      tests: [],
-    };
+    const token = localStorage.getItem("authToken");
+    console.log(token);
+    try {
+      const response = await fetch("http://localhost:5000/api/app", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // Add token if needed
+        },
+        body: JSON.stringify({
+          appName: newAppName,
+          description,
+        }),
+      });
 
-    setApps((prevApps) => [...prevApps, newApp]); // Add the new app to the list
+      if (!response.ok) {
+        throw new Error("Failed to create app");
+      }
 
-    setIsNewModalOpen(false); // Close the modal
-    setNewAppName(""); // Reset the name input
-    setDescription(""); // Reset the description input
+      const { app } = await response.json();
+
+      // Update local state with the new app
+      setApps((prevApps) => [
+        ...prevApps,
+        {
+          id: app._id,
+          name: app.appName,
+          tests: [],
+        },
+      ]);
+
+      setIsNewModalOpen(false); // Close the modal
+      setNewAppName(""); // Reset the input
+      setDescription(""); // Reset the description
+    } catch (error) {
+      console.error("Error creating app:", error.message);
+      alert("Failed to create app. Please try again.");
+    }
   };
 
   const handleOpenDeleteModal = (appId: string) => {
@@ -291,13 +318,46 @@ const Dashboard: React.FC = () => {
     setIsDeleteModalOpen(false); // Close the delete confirmation modal
   };
 
-  const handleDeleteApp = () => {
-    if (appToDelete) {
-      setApps((prevApps) => prevApps.filter((app) => app.id !== appToDelete)); // Remove the app
+  const handleDeleteApp = async () => {
+    if (!appToDelete) {
+      return;
     }
 
-    setAppToDelete(null);
-    setIsDeleteModalOpen(false); // Close the modal after deletion
+    const userId = localStorage.getItem("UserId");
+    const token = localStorage.getItem("authToken");
+
+    if (!token) {
+      alert("Authorization token is missing");
+      return;
+    }
+
+    console.log("Deleting app with ID:", appToDelete); // Log the app ID
+    console.log("user:", userId);
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/apps/${appToDelete}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          //body: JSON.stringify({ appToDelete }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete app");
+      }
+
+      setApps((prevApps) => prevApps.filter((app) => app.id !== appToDelete));
+
+      setAppToDelete(null);
+      setIsDeleteModalOpen(false);
+    } catch (error) {
+      console.error("Error deleting app:", error.message);
+      alert("Failed to delete app. Please try again.");
+    }
   };
 
   const handleUpdateNotes = (testId: string, newNotes: string) => {
