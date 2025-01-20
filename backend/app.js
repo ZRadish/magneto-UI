@@ -16,13 +16,10 @@ app.use(morgan('dev')); // Logging middleware
 // Routes
 import sampleRouter from './routes/sampleRoutes.js';
 import userRouter from './routes/userRoutes.js';
-import themeCheckRoutes from './routes/themeCheckRoutes.js';
-import backButtonRoutes from './routes/backButtonRoutes.js';
+import magnetoRoutes from './routes/magnetoRoutes.js';
 
 app.use('/api/sample', sampleRouter); // Routes all requests to /api/sample to sampleRouter
 app.use('/api/user', userRouter); // Routes all requests to /api/user to userRouter
-app.use('/api/theme', themeCheckRoutes); // Routes all requests to /api to themeCheckRoutes
-app.use('/api/back', backButtonRoutes); // Routes all requests to /api to backButtonRoutes
-
+app.use('/api/magneto', magnetoRoutes); // Routes all requests to /api to magnetoRoutes
 
 export default app;
