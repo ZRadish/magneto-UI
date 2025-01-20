@@ -243,24 +243,6 @@ const Dashboard: React.FC = () => {
         },
       ],
     },
-    {
-      id: "2",
-      name: "App 2",
-      tests: [
-        {
-          id: "1",
-          name: "13.zip",
-          dateTime: "2024-01-14 11:00",
-          oracles: {
-            language: "French",
-            theme: "Light",
-            orientation: "RTL",
-          },
-          notes: "Test notes for App 2",
-          results: "Test results for App 2",
-        },
-      ],
-    },
   ]);
 
   const handleCreateApp = async () => {
