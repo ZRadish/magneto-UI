@@ -27,8 +27,12 @@ WORKDIR /app/magneto
 ENV POETRY_HTTP_TIMEOUT=300
 RUN poetry install --no-root
 
-# 7) Expose port 5000 (Node backend)
+# 7) Expose ports for backend (5000) and frontend (5173)
 EXPOSE 5000
+EXPOSE 5173
 
 # 8) Use nodemon for live reload (ensure nodemon is in your devDependencies)
-CMD ["npm", "run", "dev"]
+# CMD ["npm", "run", "dev"]
+
+# Default to a shell; commands will be overridden by docker-compose
+CMD ["sh"]
