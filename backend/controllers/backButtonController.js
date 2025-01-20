@@ -1,18 +1,18 @@
 import { spawn } from 'child_process';
 import path from 'path';
 
-export const runThemeCheck = (req, res) => {
+export const runBackButton = (req, res) => {
     const { argA, argB } = req.body; // Expecting `argA` and `argB` from the client request
-  
-    const scriptPath = path.join('/app/magneto/themeChange', 'themeCheck.py');
+
+    const scriptPath = path.join('/app/magneto/backButton', 'SSIM-withoutReport.py');
     const scriptArgs = ['-a', argA, '-b', argB];
-  
+
     // Spawn the Python process using Poetry
     const pythonProcess = spawn('/root/.local/bin/poetry', ['run', 'python', scriptPath, ...scriptArgs], {
-        cwd: '/app/magneto/themeChange', // Correct working directory
+        cwd: '/app/magneto/backButton', // Correct working directory
         env: { ...process.env, PYTHONPATH: '/app/magneto' },
     });
-  
+
     let output = '';
     let errorOutput = '';
   
@@ -20,7 +20,7 @@ export const runThemeCheck = (req, res) => {
     pythonProcess.stdout.on('data', (data) => {
       output += data.toString();
     });
-  
+
     // Capture error output
     pythonProcess.stderr.on('data', (data) => {
       errorOutput += data.toString();
@@ -34,5 +34,5 @@ export const runThemeCheck = (req, res) => {
         res.status(500).json({ success: false, error: errorOutput });
       }
     });
-    
+
 }

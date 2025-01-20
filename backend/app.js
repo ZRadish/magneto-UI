@@ -17,10 +17,12 @@ app.use(morgan('dev')); // Logging middleware
 import sampleRouter from './routes/sampleRoutes.js';
 import userRouter from './routes/userRoutes.js';
 import themeCheckRoutes from './routes/themeCheckRoutes.js';
+import backButtonRoutes from './routes/backButtonRoutes.js';
 
 app.use('/api/sample', sampleRouter); // Routes all requests to /api/sample to sampleRouter
 app.use('/api/user', userRouter); // Routes all requests to /api/user to userRouter
 app.use('/api/theme', themeCheckRoutes); // Routes all requests to /api to themeCheckRoutes
+app.use('/api/back', backButtonRoutes); // Routes all requests to /api to backButtonRoutes
 
 
 export default app;
