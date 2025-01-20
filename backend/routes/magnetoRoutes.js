@@ -2,6 +2,7 @@ import express from 'express';
 import { runThemeCheck } from '../controllers/magnetoController.js';
 import { runBackButton } from '../controllers/magnetoController.js';
 import { runLanguageDetection } from '../controllers/magnetoController.js';
+import { runUserEnteredData } from '../controllers/magnetoController.js';
 
 const router = express.Router();
 
@@ -9,5 +10,6 @@ const router = express.Router();
 router.post('/theme-check', runThemeCheck);
 router.post('/back-button', runBackButton);
 router.post('/language-detection', runLanguageDetection);
+router.post('/user-entered-data', runUserEnteredData);
 
 export default router;
