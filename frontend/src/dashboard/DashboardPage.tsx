@@ -1,9 +1,7 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
 import { Play, Download, Save, Plus, Trash2 } from "lucide-react";
 import { Folder, ChevronDown, ChevronRight } from "lucide-react";
 import SideBar from "../components/SideBar";
-import axios from "axios";
 
 interface AppTest {
   id: string;
@@ -21,6 +19,7 @@ interface AppTest {
 interface App {
   id: string;
   name: string;
+  description: string;
   tests: AppTest[];
 }
 
@@ -78,6 +77,11 @@ const AppRow: React.FC<{
 
       {isExpanded && (
         <div className="p-4 bg-gray-900/50">
+          {/* Description inside the expanded section */}
+          <div className="text-gray-400 mb-4">
+            <p>{app.description}</p>
+          </div>
+
           <table className="w-full">
             <thead>
               <tr className="text-left text-gray-400">
@@ -177,7 +181,6 @@ const AppRow: React.FC<{
 };
 
 const Dashboard: React.FC = () => {
-  const navigate = useNavigate();
   const [isRunTestModalOpen, setIsRunTestModalOpen] = useState(false);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -185,6 +188,60 @@ const Dashboard: React.FC = () => {
   const [appToDelete, setAppToDelete] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [newAppName, setNewAppName] = useState("");
+
+  // Fetch the apps for the user
+  const [apps, setApps] = useState<
+    { id: string; name: string; description: string; tests: any[] }[]
+  >([]);
+
+  // Fetch user apps when the component mounts
+  useEffect(() => {
+    const fetchUserApps = async () => {
+      const token = localStorage.getItem("authToken");
+      const userId = localStorage.getItem("UserId");
+      if (!token) {
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/app/${userId}?nocache=${Date.now()}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch apps");
+        }
+
+        //const { apps } = await response.json();
+        //setApps(apps); // Set apps from the response
+        const data = await response.json();
+        setApps(
+          data.apps.map((app: any) => ({
+            id: app._id,
+            name: app.appName,
+            description: app.description,
+            tests: app.tests || [],
+          }))
+        );
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error("Error fetching apps:", error.message);
+          alert("Failed to fetch apps. Please try again.");
+        } else {
+          console.error("An unknown error occurred:", error);
+          alert("Failed to fetch apps. Please try again.");
+        }
+      }
+    };
+
+    fetchUserApps();
+  }, []);
 
   const handleOpenRunTestModal = () => {
     setIsRunTestModalOpen(true);
@@ -206,45 +263,6 @@ const Dashboard: React.FC = () => {
     setIsNewModalOpen(false); // Close the new modal
   };
 
-  const [apps, setApps] = useState<App[]>([
-    {
-      id: "1",
-      name: "App 1",
-      tests: [
-        {
-          id: "1",
-          name: "12.zip",
-          dateTime: "2024-01-14 10:00",
-          oracles: {
-            language: "English",
-            theme: "Dark",
-            orientation: "LTR",
-          },
-          notes: "Test notes for App 1",
-          results: "Test results for App 1",
-        },
-      ],
-    },
-    {
-      id: "2",
-      name: "App 2",
-      tests: [
-        {
-          id: "2",
-          name: "34.zip",
-          dateTime: "2024-01-14 12:00",
-          oracles: {
-            language: "",
-            theme: "",
-            orientation: "LTR",
-          },
-          notes: "",
-          results: "Test results for App 2",
-        },
-      ],
-    },
-  ]);
-
   const handleCreateApp = async () => {
     if (!newAppName || !description) {
       return;
@@ -253,7 +271,7 @@ const Dashboard: React.FC = () => {
     const token = localStorage.getItem("authToken");
     console.log(token);
     try {
-      const response = await fetch("http://localhost:5000/api/app", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/app`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -277,6 +295,7 @@ const Dashboard: React.FC = () => {
         {
           id: app._id,
           name: app.appName,
+          description: app.description,
           tests: [],
         },
       ]);
@@ -284,9 +303,14 @@ const Dashboard: React.FC = () => {
       setIsNewModalOpen(false); // Close the modal
       setNewAppName(""); // Reset the input
       setDescription(""); // Reset the description
-    } catch (error) {
-      console.error("Error creating app:", error.message);
-      alert("Failed to create app. Please try again.");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Error fetching apps:", error.message);
+        alert("Failed to fetch apps. Please try again.");
+      } else {
+        console.error("An unknown error occurred:", error);
+        alert("Failed to fetch apps. Please try again.");
+      }
     }
   };
 
@@ -317,14 +341,14 @@ const Dashboard: React.FC = () => {
     console.log("user:", userId);
     try {
       const response = await fetch(
-        `http://localhost:5000/api/apps/${appToDelete}`,
+        `${import.meta.env.VITE_API_URL}/app/${appToDelete}`,
         {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          //body: JSON.stringify({ appToDelete }),
+          body: JSON.stringify({ appToDelete }),
         }
       );
 
@@ -336,9 +360,14 @@ const Dashboard: React.FC = () => {
 
       setAppToDelete(null);
       setIsDeleteModalOpen(false);
-    } catch (error) {
-      console.error("Error deleting app:", error.message);
-      alert("Failed to delete app. Please try again.");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Error fetching apps:", error.message);
+        alert("Failed to fetch apps. Please try again.");
+      } else {
+        console.error("An unknown error occurred:", error);
+        alert("Failed to fetch apps. Please try again.");
+      }
     }
   };
 
@@ -375,9 +404,12 @@ const Dashboard: React.FC = () => {
 
         <div className="space-y-4">
           {apps.map((app) => (
-            <AppRow key={app.id} app={app} onUpdateNotes={handleUpdateNotes} />
+            <div key={app.id}>
+              <AppRow app={app} onUpdateNotes={handleUpdateNotes} />
+            </div>
           ))}
         </div>
+
         {/* Run Test Modal */}
         {isRunTestModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -396,17 +428,6 @@ const Dashboard: React.FC = () => {
                 <Plus size={16} />
                 <span>New</span>
               </button>
-
-              {/* Render App Folders Dynamically */}
-              {/*apps.map((app) => (
-        <div key={app.id} className="border border-violet-900 rounded-lg mb-4 hover:border-violet-700 transition-colors hover:shadow-lg hover:shadow-violet-900/50">
-          <div className="flex items-center p-4 cursor-pointer bg-gray-900">
-            <Folder className="mr-2 text-violet-500" size={20} />
-            <span className="flex-grow text-gray-400">{app.name}</span>
-            <ChevronRight size={20} className="text-violet-500" />
-          </div>
-        </div>
-      ))*/}
 
               {apps.map((app) => (
                 <div
