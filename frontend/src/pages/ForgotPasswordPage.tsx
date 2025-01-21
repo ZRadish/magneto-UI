@@ -7,27 +7,27 @@ import api from "../utils/api"; // Ensure this points to your API utility file
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState("");
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitted] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
-  
+
     try {
       const response = await api.post("/user/password/forgot", {
         email,
       });
-  
+
       console.log("Response from forgot password:", response);
-  
+
       const { success, userId, error } = response.data;
-  
+
       if (success) {
         // Save `_id` from the response to localStorage
         localStorage.setItem("userId", userId);
-  
+
         // Navigate to the email verification page with the `userId`
         navigate("/verify-email", {
           state: { userId, fromForgotPassword: true },
@@ -42,8 +42,7 @@ const ForgotPasswordPage = () => {
       );
     }
   };
-  
-  
+
   return (
     <div
       className="min-h-screen bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 flex items-center
@@ -79,7 +78,7 @@ const ForgotPasswordPage = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 className="mt-5 w-full py-3 px-4 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200
-              font-bold rounded-lg shadow-lg hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2
+              font-bold rounded-lg shadow-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2
               focus:ring-offset-gray-900 transition duration-200"
                 type="submit"
               >

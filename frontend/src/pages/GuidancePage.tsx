@@ -180,7 +180,7 @@ const AppRow: React.FC<{
 
 const GuidancePage: React.FC = () => {
   const navigate = useNavigate();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [, setIsModalOpen] = useState(false);
   const [runTourOnMount, setRunTourOnMount] = useState(true);
 
   // Joyride steps

@@ -25,51 +25,56 @@ const SignUpPage = () => {
     setPasswordValid(isStrongPassword); //Update state based on password strength
   };
 
- const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  setError("");
+  const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError("");
 
-  if (!firstName || !lastName || !email || !password) {
-    setError("All fields are required.");
-    return;
-  }
-
-  if (!PasswordValid) {
-    setError("Password must meet all strength requirements.");
-    return;
-  }
-
-  try {
-    // Step 1: Register the user
-    const response = await api.post("/user/register", { firstName, lastName, email, password });
-
-    // Log the API response for debugging
-    console.log("Register API Response:", response);
-
-    const data = response.data;
-
-    if (data.error) {
-      setError(data.error);
+    if (!firstName || !lastName || !email || !password) {
+      setError("All fields are required.");
       return;
     }
 
-    localStorage.setItem("userId", data.user.id);
+    if (!PasswordValid) {
+      setError("Password must meet all strength requirements.");
+      return;
+    }
 
-    // Log the user object to check if `id` exists
-    console.log("User Data:", data.user);
+    try {
+      // Step 1: Register the user
+      const response = await api.post("/user/register", {
+        firstName,
+        lastName,
+        email,
+        password,
+      });
 
-    // Step 2: Trigger email verification
-    await api.post("/user/email/verify", {
-      id: data.user.id, // Ensure `id` exists in the response
-      email: data.user.email,
-    });
+      // Log the API response for debugging
+      console.log("Register API Response:", response);
 
-    navigate("/verify-email");
-  } catch (error) {
-    console.error("Error during signup:", error);
-    setError("An error occurred during registration.");
-  }
-};
+      const data = response.data;
+
+      if (data.error) {
+        setError(data.error);
+        return;
+      }
+
+      localStorage.setItem("userId", data.user.id);
+
+      // Log the user object to check if `id` exists
+      console.log("User Data:", data.user);
+
+      // Step 2: Trigger email verification
+      await api.post("/user/email/verify", {
+        id: data.user.id, // Ensure `id` exists in the response
+        email: data.user.email,
+      });
+
+      navigate("/verify-email");
+    } catch (error) {
+      console.error("Error during signup:", error);
+      setError("An error occurred during registration.");
+    }
+  };
 
   useEffect(() => {
     validatePassword(password); //Initial validation
@@ -126,7 +131,7 @@ const SignUpPage = () => {
             <motion.button
               type="submit"
               className="mt-5 w-full py-3 px-4 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200
-              font-bold rounded-lg shadow-lg hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2
+              font-bold rounded-lg shadow-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2
               focus:ring-offset-gray-900 transition duration-200"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
