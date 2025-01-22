@@ -399,7 +399,13 @@ const Dashboard: React.FC = () => {
           </button>
         </div>
 
-        <div className="space-y-4 h-[calc(100vh-200px)] overflow-auto bg-gray-800 rounded-lg p-4 shadow-lg">
+        <div
+          className="space-y-4 h-[calc(100vh-200px)] overflow-auto bg-gray-800 rounded-lg p-4 shadow-lg"
+          style={{
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+          }}
+        >
           {apps.map((app) => (
             <div key={app.id}>
               <AppRow app={app} onUpdateNotes={handleUpdateNotes} />
