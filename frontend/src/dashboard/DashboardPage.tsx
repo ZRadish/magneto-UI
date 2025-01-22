@@ -91,7 +91,7 @@ const AppRow: React.FC<{
       } catch (error: unknown) {
         if (error instanceof Error) {
           console.error("Error fetching tests:", error.message);
-          setError("Failed to fetch tests. Please try again.");
+          setError("No tests available.");
         } else {
           console.error("An unknown error occurred:", error);
           setError("An unknown error occurred while fetching tests.");
@@ -598,7 +598,13 @@ const Dashboard: React.FC = () => {
           </button>
         </div>
 
-        <div className="space-y-4">
+        <div
+          className="space-y-4 h-[calc(100vh-200px)] overflow-auto bg-gray-800 rounded-lg p-4 shadow-lg"
+          style={{
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+          }}
+        >
           {apps.map((app) => (
             <div key={app.id}>
               <AppRow app={app} onUpdateNotes={handleUpdateNotes} />
