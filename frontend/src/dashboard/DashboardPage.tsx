@@ -217,9 +217,6 @@ const Dashboard: React.FC = () => {
         if (!response.ok) {
           throw new Error("Failed to fetch apps");
         }
-
-        //const { apps } = await response.json();
-        //setApps(apps); // Set apps from the response
         const data = await response.json();
         setApps(
           data.apps.map((app: any) => ({
@@ -402,7 +399,7 @@ const Dashboard: React.FC = () => {
           </button>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 h-[calc(100vh-200px)] overflow-auto bg-gray-800 rounded-lg p-4 shadow-lg">
           {apps.map((app) => (
             <div key={app.id}>
               <AppRow app={app} onUpdateNotes={handleUpdateNotes} />
