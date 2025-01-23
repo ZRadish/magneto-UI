@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import { Play, Download, Save, Plus, Trash2 } from "lucide-react";
 import { Folder, ChevronDown, ChevronRight } from "lucide-react";
 import SideBar from "../components/SideBar";
-import axios from "axios";
+// import axios from "axios";
 
 interface AppTest {
   id: string;
@@ -177,7 +177,7 @@ const AppRow: React.FC<{
 };
 
 const Dashboard: React.FC = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [isRunTestModalOpen, setIsRunTestModalOpen] = useState(false);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -222,24 +222,6 @@ const Dashboard: React.FC = () => {
           },
           notes: "Test notes for App 1",
           results: "Test results for App 1",
-        },
-      ],
-    },
-    {
-      id: "2",
-      name: "App 2",
-      tests: [
-        {
-          id: "2",
-          name: "34.zip",
-          dateTime: "2024-01-14 12:00",
-          oracles: {
-            language: "",
-            theme: "",
-            orientation: "LTR",
-          },
-          notes: "",
-          results: "Test results for App 2",
         },
       ],
     },
@@ -299,11 +281,15 @@ const Dashboard: React.FC = () => {
         },
       ]);
 
-      setIsNewModalOpen(false); // Close the modal
-      setNewAppName(""); // Reset the input
-      setDescription(""); // Reset the description
+      setIsNewModalOpen(false);
+      setNewAppName("");
+      setDescription("");
     } catch (error) {
-      console.error("Error creating app:", error.message);
+      if (error instanceof Error) {
+        console.error("Error creating app:", error.message);
+      } else {
+        console.error("Error creating app:", String(error));
+      }
       alert("Failed to create app. Please try again.");
     }
   };
@@ -355,7 +341,11 @@ const Dashboard: React.FC = () => {
       setAppToDelete(null);
       setIsDeleteModalOpen(false);
     } catch (error) {
-      console.error("Error deleting app:", error.message);
+      if (error instanceof Error) {
+        console.error("Error deleting app:", error.message);
+      } else {
+        console.error("Error deleting app:", String(error));
+      }
       alert("Failed to delete app. Please try again.");
     }
   };

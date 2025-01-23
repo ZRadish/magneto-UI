@@ -132,7 +132,7 @@ const EmailVerificationPage: React.FC = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="mt-5 w-full py-3 px-4 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200
-              font-bold rounded-lg shadow-lg hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2
+              font-bold rounded-lg shadow-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2
               focus:ring-offset-gray-900 transition duration-200"
             type="submit"
             disabled={isLoading || code.some((digit) => !digit)}
