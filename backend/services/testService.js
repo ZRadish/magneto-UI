@@ -9,7 +9,7 @@ export const createTestService = async ({
   oraclesSelected,
   notes,
   dateTime,
-  fileId,
+  fileId = null, // Default fileId to null
 }) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -18,7 +18,8 @@ export const createTestService = async ({
     // Convert IDs to ObjectId
     const appObjectId = new mongoose.Types.ObjectId(appId);
     const userObjectId = new mongoose.Types.ObjectId(userId);
-    const fileObjectId = new mongoose.Types.ObjectId(fileId);
+
+    const fileObjectId = fileId ? new mongoose.Types.ObjectId(fileId) : null; // Handle null fileId
 
     // Create the test
     const newTest = await Test.create(
@@ -56,6 +57,7 @@ export const createTestService = async ({
     throw new Error('Failed to create test: ' + error.message);
   }
 };
+
 
 export const getTestsByAppService = async (appId) => {
     const appObjectId = new mongoose.Types.ObjectId(appId);
@@ -122,3 +124,31 @@ export const deleteTestService = async (testId) => {
       throw new Error('Failed to delete test: ' + error.message);
     }
   };
+
+
+export const updateTestAfterRun = async (testId, { result, status }) => {
+  try {
+    // Validate testId
+    const testObjectId = new mongoose.Types.ObjectId(testId);
+
+    // Find and update the test
+    const updatedTest = await Test.findByIdAndUpdate(
+      testObjectId,
+      {
+        $set: {
+          result, // Update the result field
+          status, // Update the status field
+        },
+      },
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedTest) {
+      throw new Error('Test not found or update failed');
+    }
+
+    return updatedTest;
+  } catch (error) {
+    throw new Error(`Failed to update test: ${error.message}`);
+  }
+};

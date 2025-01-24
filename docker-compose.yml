@@ -7,6 +7,8 @@ services:
       dockerfile: Dockerfile.dev
     volumes:
       - ./backend:/app/backend
+      - ./src:/app/src
+      - /tmp:/app/temp 
     working_dir: /app/backend
     command: sh -c "npm install && npm run dev" 
     ports:
