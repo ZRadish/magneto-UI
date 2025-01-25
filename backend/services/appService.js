@@ -104,4 +104,32 @@ export const deleteAppService = async (appId, userId) => {
       throw new Error(error.message);
     }
   };
-  
+
+export const updateAppNameService = async (appId, userId, newAppName) => {
+  try {
+    const appObjectId = new mongoose.Types.ObjectId(appId);
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    // Find the app and check if the user owns it
+    const app = await App.findOne({ _id: appObjectId, userId: userObjectId });
+
+    if (!app) {
+      throw new Error("App not found or not owned by this user.");
+    }
+
+    // Update the app name
+    const updatedApp = await App.findByIdAndUpdate(
+      appObjectId,
+      { $set: { appName: newAppName } },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedApp) {
+      throw new Error("Failed to update app name.");
+    }
+
+    return updatedApp;
+  } catch (error) {
+    throw new Error("Error updating app name: " + error.message);
+  }
+};
