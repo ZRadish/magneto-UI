@@ -122,3 +122,23 @@ export const deleteTestService = async (testId) => {
       throw new Error('Failed to delete test: ' + error.message);
     }
   };
+
+  export const updateTestNotesService = async (testId, notes) => {
+    try {
+      const testObjectId = new mongoose.Types.ObjectId(testId);
+  
+      const updatedTest = await Test.findByIdAndUpdate(
+        testObjectId,
+        { $set: { notes } },
+        { new: true, runValidators: true }
+      );
+  
+      if (!updatedTest) {
+        throw new Error('Test not found');
+      }
+  
+      return updatedTest;
+    } catch (error) {
+      throw new Error('Failed to update test notes: ' + error.message);
+    }
+  };

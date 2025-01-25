@@ -176,10 +176,45 @@ const AppRow: React.FC<{
     }
   };
 
-  const handleSaveNotes = () => {
-    if (activeModal?.testId) {
-      onUpdateNotes(activeModal.testId, editableNotes);
-      setActiveModal(null);
+  const handleSaveNotes = async () => {
+    if (!activeModal?.testId) return;
+  
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      alert("Authentication token not found");
+      return;
+    }
+  
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/test/${activeModal.testId}/notes`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ notes: editableNotes }),
+        }
+      );
+  
+      if (!response.ok) {
+        throw new Error(`Failed to update notes: ${response.status}`);
+      }
+  
+      const updatedTest = await response.json();
+  
+      // Update local state with new notes
+      setTests((prevTests) =>
+        prevTests.map((test) =>
+          test._id === activeModal.testId ? { ...test, notes: updatedTest.test.notes } : test
+        )
+      );
+  
+      setActiveModal(null); // Close modal
+    } catch (error) {
+      console.error("Error updating notes:", error);
+      alert("Failed to update notes. Please try again.");
     }
   };
 
