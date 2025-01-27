@@ -184,38 +184,38 @@ const AppRow: React.FC<{
   };
 
   return (
-    <div className="border border-violet-900 rounded-lg mb-4 hover:border-violet-700 transition-colors hover:shadow-lg hover:shadow-violet-900/50">
+    <div className="border border-violet-900 rounded-xl p-2 mb-6 hover:border-violet-700 transition-colors hover:shadow-lg hover:shadow-violet-900/50">
       <div
-        className="flex items-center p-4 cursor-pointer bg-gray-900"
+        className="flex items-center p-6 cursor-pointer bg-gray-900 rounded-t-xl"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <Folder className="mr-2 text-violet-500" size={20} />
-        <span className="flex-grow text-gray-400">{app.name}</span>
+        <Folder className="mr-3 text-violet-500" size={24} />
+        <span className="flex-grow text-gray-400 text-lg">{app.name}</span>
         {isExpanded ? (
-          <ChevronDown size={20} className="text-violet-500" />
+          <ChevronDown size={24} className="text-violet-500" />
         ) : (
-          <ChevronRight size={20} className="text-violet-500" />
+          <ChevronRight size={24} className="text-violet-500" />
         )}
       </div>
 
       {isExpanded && (
-        <div className="p-4 bg-gray-900/50">
-          <div className="text-gray-400 mb-4 border border-gray-700 rounded-lg p-3">
+        <div className="p-6 bg-gray-900/50">
+          <div className="text-gray-400 mb-6 border border-gray-700 rounded-xl p-4">
             <p>{app.description}</p>
           </div>
 
           {isLoading && (
-            <div className="text-gray-400 text-center py-4">
+            <div className="text-gray-400 text-center py-6">
               Loading tests...
             </div>
           )}
 
           {error && (
-            <div className="text-red-500 text-center py-4">{error}</div>
+            <div className="text-red-500 text-center py-6">{error}</div>
           )}
 
           {!isLoading && !error && tests.length === 0 && (
-            <div className="text-gray-400 text-center py-4">
+            <div className="text-gray-400 text-center py-6">
               No tests found for this app
             </div>
           )}
@@ -225,20 +225,20 @@ const AppRow: React.FC<{
               <table className="w-full">
                 <thead>
                   <tr className="text-left text-gray-400">
-                    <th className="p-2">Test Name</th>
-                    <th className="p-2">File</th>
-                    <th className="p-2">Created At</th>
-                    <th className="p-2">Status</th>
-                    <th className="p-2">Oracles Selected</th>
-                    <th className="p-2">Notes</th>
-                    <th className="p-2">Results</th>
+                    <th className="p-3">Test Name</th>
+                    <th className="p-3">File</th>
+                    <th className="p-3">Created At</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3">Oracles Selected</th>
+                    <th className="p-3">Notes</th>
+                    <th className="p-3">Results</th>
                   </tr>
                 </thead>
                 <tbody className="text-gray-400">
                   {tests.map((test) => (
                     <tr key={test._id}>
-                      <td className="p-2">{test.testName}</td>
-                      <td className="p-2">
+                      <td className="p-3">{test.testName}</td>
+                      <td className="p-3">
                         {test.fileId ? (
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-gray-400">
@@ -256,12 +256,12 @@ const AppRow: React.FC<{
                           <span className="text-sm text-red-500">No file</span>
                         )}
                       </td>
-                      <td className="p-2">
+                      <td className="p-3">
                         {new Date(test.createdAt).toLocaleString()}
                       </td>
-                      <td className="p-2">
+                      <td className="p-3">
                         <span
-                          className={`px-2 py-1 rounded-full text-xs ${
+                          className={`px-3 py-1.5 rounded-full text-xs ${
                             test.status === "completed"
                               ? "bg-green-500/20 text-green-400"
                               : "bg-yellow-500/20 text-yellow-400"
@@ -270,10 +270,9 @@ const AppRow: React.FC<{
                           {test.status}
                         </span>
                       </td>
-                      <td className="p-2">
-                        <div className="flex flex-col gap-1">
+                      <td className="p-3">
+                        <div className="flex flex-col gap-1.5">
                           {test.oraclesSelected.map((oracle, index) => {
-                            // Define color classes for each oracle type
                             const colorClass =
                               {
                                 "Orientation Change":
@@ -283,12 +282,12 @@ const AppRow: React.FC<{
                                   "bg-red-900/20 text-red-400",
                                 "User Input":
                                   "bg-yellow-900/20 text-yellow-400",
-                              }[oracle] || "bg-violet-900/20 text-violet-400"; // Fallback color
+                              }[oracle] || "bg-violet-900/20 text-violet-400";
 
                             return (
                               <span
                                 key={index}
-                                className={`px-2 py-1 ${colorClass} rounded-full text-xs w-40`}
+                                className={`px-3 py-1.5 ${colorClass} rounded-full text-xs w-44`}
                               >
                                 {oracle}
                               </span>
@@ -296,7 +295,7 @@ const AppRow: React.FC<{
                           })}
                         </div>
                       </td>
-                      <td className="p-2">
+                      <td className="p-3">
                         <button
                           className="text-violet-500 hover:text-violet-400 transition-colors"
                           onClick={() => openModal("notes", test._id)}
@@ -304,7 +303,7 @@ const AppRow: React.FC<{
                           {test.notes ? "View/Edit" : "Add Notes"}
                         </button>
                       </td>
-                      <td className="p-2">
+                      <td className="p-3">
                         <div className="flex items-center gap-2">
                           <button
                             className="text-violet-500 hover:text-violet-400 transition-colors"
@@ -334,28 +333,28 @@ const AppRow: React.FC<{
 
       {activeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-900 p-6 rounded-lg max-w-2xl w-full border border-violet-900">
-            <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
+          <div className="bg-gray-900 p-8 rounded-xl max-w-2xl w-full border border-violet-900">
+            <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
               {activeModal.type === "notes" ? "Notes" : "Results"}
             </h2>
             <div className="max-h-96 overflow-y-auto">
               {activeModal.type === "notes" ? (
                 <textarea
-                  className="w-full h-64 bg-gray-800 text-gray-300 p-4 rounded-lg border border-violet-900 focus:border-violet-700 focus:outline-none resize-none"
+                  className="w-full h-64 bg-gray-800 text-gray-300 p-6 rounded-xl border border-violet-900 focus:border-violet-700 focus:outline-none resize-none"
                   value={editableNotes}
                   onChange={(e) => setEditableNotes(e.target.value)}
                   placeholder="Enter your notes here..."
                 />
               ) : (
-                <pre className="text-gray-400 whitespace-pre-wrap p-4 bg-gray-800 rounded-lg">
+                <pre className="text-gray-400 whitespace-pre-wrap p-6 bg-gray-800 rounded-xl">
                   {modalContent}
                 </pre>
               )}
             </div>
-            <div className="mt-4 flex justify-end gap-4">
+            <div className="mt-6 flex justify-end gap-4">
               {activeModal.type === "notes" && (
                 <button
-                  className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+                  className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-xl hover:opacity-90 transition-opacity flex items-center gap-2"
                   onClick={handleSaveNotes}
                 >
                   <Save size={16} />
@@ -363,7 +362,7 @@ const AppRow: React.FC<{
                 </button>
               )}
               <button
-                className="px-4 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
+                className="px-6 py-3 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-xl hover:opacity-90 transition-opacity"
                 onClick={() => setActiveModal(null)}
               >
                 Close
