@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Play, Download, Save, Plus, Trash2 } from "lucide-react";
 import { Folder, ChevronDown, ChevronRight } from "lucide-react";
 import SideBar from "../components/SideBar";
-import { useNavigate } from "react-router-dom";
+//import { useNavigate } from "react-router-dom";
 
 interface AppTest {
   _id: string;
@@ -377,7 +377,7 @@ const AppRow: React.FC<{
 };
 
 const Dashboard: React.FC = () => {
-  const navigate = useNavigate();
+  //const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<
     "select-app" | "create-test" | "upload-files"
   >("select-app");
@@ -393,7 +393,7 @@ const Dashboard: React.FC = () => {
   const [testName, setTestName] = useState("");
   const [selectedOracle, setSelectedOracle] = useState<string>("");
   const [testNotes, setTestNotes] = useState("");
-  const [createdTestId, setCreatedTestId] = useState<string | null>(null);
+  const [createdTestId] = useState<string | null>(null);
 
   // Existing apps state
   const [apps, setApps] = useState<
@@ -600,8 +600,60 @@ const Dashboard: React.FC = () => {
     if (currentStep === "select-app" && selectedAppId) {
       setCurrentStep("create-test");
     } else if (currentStep === "create-test") {
+      const token = localStorage.getItem("authToken");
+
+      if (!token) {
+        alert("Authorization token is missing");
+        return;
+      }
+
+      if (!testName || !selectedOracle) {
+        alert("Please provide a Test Name and select an Oracle.");
+        return;
+      }
+
+      const testPayload = {
+        appId: selectedAppId,
+        testName: testName,
+        oracleId: selectedOracle,
+        notes: testNotes,
+        dateTime: new Date().toISOString(),
+        fileId: createdTestId || null,
+      };
+
+      console.log("Creating test with payload:", testPayload);
+
       // Create test API call
-      console.log("create test now");
+
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/test`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(testPayload),
+        });
+        if (!response.ok) {
+          throw new Error("Failed to create test");
+        }
+        const createdTest = await response.json();
+        console.log("Test created successfully:", createdTest);
+
+        // Optional: Update state or provide user feedback
+        setCurrentStep("select-app"); // Return to the previous step
+        alert("Test created successfully!");
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error("Error creating test:", error.message);
+          alert("Failed to create test. Please try again.");
+        } else {
+          console.error("An unknown error occurred:", error);
+          alert("Failed to create test. Please try again.");
+        }
+      }
+
+      //console.log("create test now");
     }
   };
 
