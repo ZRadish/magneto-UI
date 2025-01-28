@@ -601,36 +601,6 @@ const Dashboard: React.FC = () => {
       setCurrentStep("create-test");
     } else if (currentStep === "create-test") {
       // Create test API call
-      // const token = localStorage.getItem("authToken");
-      // try {
-      //   const response = await fetch(`${import.meta.env.VITE_API_URL}/test`, {
-      //     method: "POST",
-      //     headers: {
-      //       "Content-Type": "application/json",
-      //       Authorization: `Bearer ${token}`,
-      //     },
-      //     body: JSON.stringify({
-      //       appId: selectedAppId,
-      //       testName,
-      //       oracle: selectedOracle,
-      //       notes: testNotes,
-      //     }),
-      //   });
-
-      //   if (!response.ok) {
-      //     throw new Error("Failed to create test");
-      //   }
-
-      //   const { test } = await response.json();
-      //   setCreatedTestId(test._id);
-
-      //   // Navigate to upload page with necessary params
-      //   // navigate(`/upload?appId=${selectedAppId}&testId=${test._id}`);
-      //   setIsRunTestModalOpen(false);
-      // } catch (error) {
-      //   console.error("Error creating test:", error);
-      //   alert("Failed to create test. Please try again.");
-      // }
       console.log("create test now");
     }
   };
