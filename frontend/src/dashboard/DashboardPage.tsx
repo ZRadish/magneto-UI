@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Play, Download, Save, Plus, Trash2 } from "lucide-react";
+import { Play, Download, Save, Plus, Trash2, Edit } from "lucide-react";
 import { Folder, ChevronDown, ChevronRight } from "lucide-react";
 import SideBar from "../components/SideBar";
 
@@ -27,7 +27,10 @@ interface App {
 const AppRow: React.FC<{
   app: App;
   onUpdateNotes: (testId: string, newNotes: string) => void;
-}> = ({ app, onUpdateNotes }) => {
+  onUpdateAppName: (appId: string, newName: string) => void;
+}> = ({ app, onUpdateNotes, onUpdateAppName }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [newAppName, setNewAppName] = useState(app.name);
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeModal, setActiveModal] = useState<{
     type: "notes" | "results";
@@ -38,6 +41,9 @@ const AppRow: React.FC<{
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modalContent, setModalContent] = useState<string>("");
+  const handleEditClick = () => {
+    setIsEditing(true);
+  };
 
   useEffect(() => {
     const fetchTests = async () => {
@@ -217,21 +223,81 @@ const AppRow: React.FC<{
       alert("Failed to update notes. Please try again.");
     }
   };
+  
+  const handleSaveAppName = async () => {
+    if (!newAppName.trim()) {
+      alert("App name cannot be empty.");
+      return;
+    }
+
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      alert("Authentication token not found.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/app/${app.id}/name`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ appName: newAppName }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to update app name: ${response.status}`);
+      }
+
+      const updatedApp = await response.json();
+      onUpdateAppName(app.id, updatedApp.app.appName);
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error updating app name:", error);
+      alert("Failed to update app name. Please try again.");
+    }
+  };
 
   return (
     <div className="border border-violet-900 rounded-lg mb-4 hover:border-violet-700 transition-colors hover:shadow-lg hover:shadow-violet-900/50">
-      <div
-        className="flex items-center p-4 cursor-pointer bg-gray-900"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <Folder className="mr-2 text-violet-500" size={20} />
-        <span className="flex-grow text-gray-400">{app.name}</span>
-        {isExpanded ? (
-          <ChevronDown size={20} className="text-violet-500" />
-        ) : (
-          <ChevronRight size={20} className="text-violet-500" />
-        )}
+      <div className="flex items-center p-4 cursor-pointer bg-gray-900" onClick={() => setIsExpanded(!isExpanded)}>
+          <Folder className="mr-2 text-violet-500" size={20} />
+
+          {/* Editable App Name */}
+          {isEditing ? (
+            <input
+              type="text"
+              value={newAppName}
+              onChange={(e) => setNewAppName(e.target.value)}
+              onClick={(e) => e.stopPropagation()} // Prevent toggling expansion while editing
+              className="flex-grow text-gray-400 bg-gray-800 border border-violet-700 rounded px-2 py-1 focus:outline-none"
+            />
+          ) : (
+            <span className="flex-grow text-gray-400">{app.name}</span>
+          )}
+
+          {/* Edit & Save Buttons */}
+          {isEditing ? (
+            <button onClick={(e) => { e.stopPropagation(); handleSaveAppName(); }} className="ml-2 text-green-500 hover:text-green-400">
+              <Save size={20} />
+            </button>
+          ) : (
+            <button onClick={(e) => { e.stopPropagation(); handleEditClick(); }} className="ml-2 text-violet-500 hover:text-violet-400">
+              <Edit size={20} />
+            </button>
+          )}
+
+          {isExpanded ? (
+            <ChevronDown size={20} className="text-violet-500" />
+          ) : (
+            <ChevronRight size={20} className="text-violet-500" />
+          )}
       </div>
+
 
       {isExpanded && (
         <div className="p-4 bg-gray-900/50">
@@ -613,6 +679,12 @@ const Dashboard: React.FC = () => {
     );
   };
 
+  const handleUpdateAppName = (appId: string, newName: string) => {
+    setApps((prevApps) =>
+      prevApps.map((app) => (app.id === appId ? { ...app, name: newName } : app))
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 to-gray-950">
       <SideBar />
@@ -642,7 +714,7 @@ const Dashboard: React.FC = () => {
         >
           {apps.map((app) => (
             <div key={app.id}>
-              <AppRow app={app} onUpdateNotes={handleUpdateNotes} />
+              <AppRow app={app} onUpdateNotes={handleUpdateNotes} onUpdateAppName={handleUpdateAppName} />
             </div>
           ))}
         </div>
