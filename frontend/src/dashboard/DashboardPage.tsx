@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Play, Download, Save, Plus, Trash2, Edit } from "lucide-react";
 import { Folder, ChevronDown, ChevronRight } from "lucide-react";
 import SideBar from "../components/SideBar";
@@ -28,7 +28,8 @@ const AppRow: React.FC<{
   app: App;
   onUpdateNotes: (testId: string, newNotes: string) => void;
   onUpdateAppName: (appId: string, newName: string) => void;
-}> = ({ app, onUpdateNotes, onUpdateAppName }) => {
+  onUpdateDescription: (appId: string, newDescription: string) => void;
+}> = ({ app, onUpdateNotes, onUpdateAppName, onUpdateDescription }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newAppName, setNewAppName] = useState(app.name);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -41,9 +42,17 @@ const AppRow: React.FC<{
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modalContent, setModalContent] = useState<string>("");
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [newDescription, setNewDescription] = useState(app.description);
+  const descriptionInputRef = useRef<HTMLInputElement>(null);
   const handleEditClick = () => {
     setIsEditing(true);
+    setTimeout(() => {
+      appNameInputRef.current?.focus(); // Auto-focus input after enabling edit mode
+    }, 0);
   };
+  const appNameInputRef = useRef<HTMLInputElement>(null);
+
 
   useEffect(() => {
     const fetchTests = async () => {
@@ -210,32 +219,27 @@ const AppRow: React.FC<{
   
       const updatedTest = await response.json();
   
-      // Update local state with new notes
-      setTests((prevTests) =>
-        prevTests.map((test) =>
-          test._id === activeModal.testId ? { ...test, notes: updatedTest.test.notes } : test
-        )
-      );
+      onUpdateNotes(activeModal.testId, updatedTest.test.notes);
   
       setActiveModal(null); // Close modal
     } catch (error) {
       console.error("Error updating notes:", error);
       alert("Failed to update notes. Please try again.");
     }
-  };
+  };  
   
   const handleSaveAppName = async () => {
     if (!newAppName.trim()) {
       alert("App name cannot be empty.");
       return;
     }
-
+  
     const token = localStorage.getItem("authToken");
     if (!token) {
       alert("Authentication token not found.");
       return;
     }
-
+  
     try {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/app/${app.id}/name`,
@@ -248,20 +252,58 @@ const AppRow: React.FC<{
           body: JSON.stringify({ appName: newAppName }),
         }
       );
-
+  
       if (!response.ok) {
         throw new Error(`Failed to update app name: ${response.status}`);
       }
-
+  
       const updatedApp = await response.json();
       onUpdateAppName(app.id, updatedApp.app.appName);
-      setIsEditing(false);
+      setIsEditing(false); // Exit edit mode after saving
     } catch (error) {
       console.error("Error updating app name:", error);
       alert("Failed to update app name. Please try again.");
     }
   };
 
+  const handleEditDescription = () => {
+    setIsEditingDescription(true);
+    setTimeout(() => {
+      descriptionInputRef.current?.focus(); // Auto-focus input after state updates
+    }, 0);
+  };
+
+  const handleSaveDescription = async () => {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      alert("Authentication token not found.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/app/${app.id}/description`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ description: newDescription.trim() }), // Allow empty string
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update app description: ${response.status}`);
+      }
+
+      const updatedApp = await response.json();
+      onUpdateDescription(app.id, updatedApp.app.description || ""); // Ensure empty string is saved
+
+      setIsEditingDescription(false);
+    } catch (error) {
+      console.error("Error updating app description:", error);
+      alert("Failed to update app description. Please provide a non-empty description of the app.");
+    }
+  };
+  
   return (
     <div className="border border-violet-900 rounded-lg mb-4 hover:border-violet-700 transition-colors hover:shadow-lg hover:shadow-violet-900/50">
       <div className="flex items-center p-4 cursor-pointer bg-gray-900" onClick={() => setIsExpanded(!isExpanded)}>
@@ -270,10 +312,17 @@ const AppRow: React.FC<{
           {/* Editable App Name */}
           {isEditing ? (
             <input
+              ref={appNameInputRef} // Auto-focus when editing
               type="text"
               value={newAppName}
               onChange={(e) => setNewAppName(e.target.value)}
               onClick={(e) => e.stopPropagation()} // Prevent toggling expansion while editing
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSaveAppName(); // Save on Enter key
+                }
+              }}
               className="flex-grow text-gray-400 bg-gray-800 border border-violet-700 rounded px-2 py-1 focus:outline-none"
             />
           ) : (
@@ -302,7 +351,23 @@ const AppRow: React.FC<{
       {isExpanded && (
         <div className="p-4 bg-gray-900/50">
           <div className="text-gray-400 mb-4 border border-gray-700 rounded-lg p-3">
-            <p>{app.description}</p>
+            {isEditingDescription ? (
+              <input
+                ref={descriptionInputRef}
+                type="text"
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                onBlur={handleSaveDescription} // Save when the input loses focus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveDescription(); // Save on Enter key
+                }}
+                className="w-full text-gray-400 bg-gray-800 border border-violet-700 rounded px-2 py-1 focus:outline-none"
+              />
+            ) : (
+              <p onClick={handleEditDescription} className="cursor-pointer text-gray-400">
+                {app.description}
+              </p>
+            )}
           </div>
 
           {isLoading && (
@@ -685,6 +750,12 @@ const Dashboard: React.FC = () => {
     );
   };
 
+  const handleUpdateDescription = (appId: string, newDescription: string) => {
+    setApps((prevApps) =>
+      prevApps.map((app) => (app.id === appId ? { ...app, description: newDescription } : app))
+    );
+  };  
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 to-gray-950">
       <SideBar />
@@ -714,7 +785,7 @@ const Dashboard: React.FC = () => {
         >
           {apps.map((app) => (
             <div key={app.id}>
-              <AppRow app={app} onUpdateNotes={handleUpdateNotes} onUpdateAppName={handleUpdateAppName} />
+              <AppRow app={app} onUpdateNotes={handleUpdateNotes} onUpdateAppName={handleUpdateAppName} onUpdateDescription={handleUpdateDescription} />
             </div>
           ))}
         </div>
