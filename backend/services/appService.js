@@ -133,3 +133,32 @@ export const updateAppNameService = async (appId, userId, newAppName) => {
     throw new Error("Error updating app name: " + error.message);
   }
 };
+
+export const updateAppDescriptionService = async (appId, userId, newDescription) => {
+  try {
+    const appObjectId = new mongoose.Types.ObjectId(appId);
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    // Find the app and verify if the user owns it
+    const app = await App.findOne({ _id: appObjectId, userId: userObjectId });
+
+    if (!app) {
+      throw new Error("App not found or not owned by this user.");
+    }
+
+    // Update the description
+    const updatedApp = await App.findByIdAndUpdate(
+      appObjectId,
+      { $set: { description: newDescription } },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedApp) {
+      throw new Error("Failed to update app description.");
+    }
+
+    return updatedApp;
+  } catch (error) {
+    throw new Error("Error updating app description: " + error.message);
+  }
+};
