@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Play, Download, Save, Plus, Trash2 } from "lucide-react";
 import { Folder, ChevronDown, ChevronRight } from "lucide-react";
 import SideBar from "../components/SideBar";
+import { useNavigate } from "react-router-dom";
 
 interface AppTest {
   _id: string;
@@ -376,6 +377,10 @@ const AppRow: React.FC<{
 };
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState<
+    "select-app" | "create-test" | "upload-files"
+  >("select-app");
   const [isRunTestModalOpen, setIsRunTestModalOpen] = useState(false);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -384,10 +389,24 @@ const Dashboard: React.FC = () => {
   const [description, setDescription] = useState("");
   const [newAppName, setNewAppName] = useState("");
 
-  // Fetch the apps for the user
+  // New state for test creation
+  const [testName, setTestName] = useState("");
+  const [selectedOracle, setSelectedOracle] = useState<string>("");
+  const [testNotes, setTestNotes] = useState("");
+  const [createdTestId, setCreatedTestId] = useState<string | null>(null);
+
+  // Existing apps state
   const [apps, setApps] = useState<
     { id: string; name: string; description: string; tests: any[] }[]
   >([]);
+
+  // Oracle options
+  const oracleOptions = [
+    { id: "oracle1", name: "Orientation Change" },
+    { id: "oracle2", name: "Back Button" },
+    { id: "oracle3", name: "Language Detection" },
+    { id: "oracle4", name: "User Input" },
+  ];
 
   // Fetch user apps when the component mounts
   useEffect(() => {
@@ -577,6 +596,154 @@ const Dashboard: React.FC = () => {
     );
   };
 
+  const handleNextStep = async () => {
+    if (currentStep === "select-app" && selectedAppId) {
+      setCurrentStep("create-test");
+    } else if (currentStep === "create-test") {
+      // Create test API call
+      // const token = localStorage.getItem("authToken");
+      // try {
+      //   const response = await fetch(`${import.meta.env.VITE_API_URL}/test`, {
+      //     method: "POST",
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //       Authorization: `Bearer ${token}`,
+      //     },
+      //     body: JSON.stringify({
+      //       appId: selectedAppId,
+      //       testName,
+      //       oracle: selectedOracle,
+      //       notes: testNotes,
+      //     }),
+      //   });
+
+      //   if (!response.ok) {
+      //     throw new Error("Failed to create test");
+      //   }
+
+      //   const { test } = await response.json();
+      //   setCreatedTestId(test._id);
+
+      //   // Navigate to upload page with necessary params
+      //   // navigate(`/upload?appId=${selectedAppId}&testId=${test._id}`);
+      //   setIsRunTestModalOpen(false);
+      // } catch (error) {
+      //   console.error("Error creating test:", error);
+      //   alert("Failed to create test. Please try again.");
+      // }
+      console.log("create test now");
+    }
+  };
+
+  const handleBackStep = () => {
+    if (currentStep === "create-test") {
+      setCurrentStep("select-app");
+    }
+  };
+
+  const renderModalContent = () => {
+    switch (currentStep) {
+      case "select-app":
+        return (
+          <>
+            <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
+              Select App
+            </h2>
+            <p className="text-gray-400 mb-4">
+              Select an app folder to configure and run the test.
+            </p>
+            <button
+              onClick={handleOpenNewModal}
+              className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2"
+            >
+              <Plus size={16} />
+              <span>New</span>
+            </button>
+
+            {apps.map((app) => (
+              <div
+                key={app.id}
+                onClick={() => handleAppSelect(app.id)}
+                className={`relative border border-violet-900 rounded-lg mb-4 cursor-pointer ${
+                  selectedAppId === app.id
+                    ? "bg-violet-900/50"
+                    : "hover:border-violet-700 transition-colors hover:shadow-lg hover:shadow-violet-900/50"
+                }`}
+              >
+                <div className="flex items-center p-4">
+                  <Folder className="mr-2 text-violet-500" size={20} />
+                  <span className="flex-grow text-gray-400">{app.name}</span>
+                  <ChevronRight size={20} className="text-violet-500" />
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenDeleteModal(app.id);
+                  }}
+                  className="absolute top-4 right-4 px-3 py-2 bg-red-600 text-white rounded-full hover:opacity-80 transition-opacity"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+          </>
+        );
+
+      case "create-test":
+        return (
+          <>
+            <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
+              Create Test
+            </h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-gray-200 mb-2">Test Name</label>
+                <input
+                  className="w-full p-4 bg-gray-800 text-gray-300 border border-violet-900 rounded-lg focus:outline-none"
+                  placeholder="Enter test name"
+                  value={testName}
+                  onChange={(e) => setTestName(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-200 mb-2">
+                  Select Oracle
+                </label>
+                <select
+                  className="w-full p-4 bg-gray-800 text-gray-300 border border-violet-900 rounded-lg focus:outline-none"
+                  value={selectedOracle}
+                  onChange={(e) => setSelectedOracle(e.target.value)}
+                >
+                  <option value="">Select an oracle</option>
+                  {oracleOptions.map((oracle) => (
+                    <option key={oracle.id} value={oracle.id}>
+                      {oracle.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-gray-200 mb-2">Notes</label>
+                <textarea
+                  className="w-full p-4 bg-gray-800 text-gray-300 border border-violet-900 rounded-lg focus:outline-none"
+                  placeholder="Add any notes about this test"
+                  value={testNotes}
+                  onChange={(e) => setTestNotes(e.target.value)}
+                  rows={4}
+                />
+              </div>
+            </div>
+          </>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 to-gray-950">
       <SideBar />
@@ -612,64 +779,40 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Run Test Modal */}
+        {/* Updated Modal */}
         {isRunTestModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="relative bg-gray-900 p-6 rounded-lg max-w-2xl w-full border border-violet-900">
-              <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
-                Run Test
-              </h2>
-              <p className="text-gray-400 mb-4">
-                Select an app folder to configure and run the test.
-              </p>
-              {/* New Button */}
-              <button
-                onClick={handleOpenNewModal}
-                className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2"
-              >
-                <Plus size={16} />
-                <span>New</span>
-              </button>
-
-              {apps.map((app) => (
-                <div
-                  key={app.id}
-                  onClick={() => handleAppSelect(app.id)}
-                  className={`relative border border-violet-900 rounded-lg mb-4 cursor-pointer ${
-                    selectedAppId === app.id
-                      ? "bg-violet-900/50"
-                      : "hover:border-violet-700 transition-colors hover:shadow-lg hover:shadow-violet-900/50"
-                  }`}
-                >
-                  <div className="flex items-center p-4">
-                    <Folder className="mr-2 text-violet-500" size={20} />
-                    <span className="flex-grow text-gray-400">{app.name}</span>
-                    <ChevronRight size={20} className="text-violet-500" />
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent the onClick from being triggered on the folder container
-                      handleOpenDeleteModal(app.id);
-                    }}
-                    className="absolute top-4 right-4 px-3 py-2 bg-red-600 text-white rounded-full hover:opacity-80 transition-opacity"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))}
+              {renderModalContent()}
 
               {/* Modal Actions */}
               <div className="mt-4 flex justify-between gap-4">
+                {currentStep === "create-test" ? (
+                  <button
+                    onClick={handleBackStep}
+                    className="px-4 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
+                  >
+                    Back
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setIsRunTestModalOpen(false)}
+                    className="px-4 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
+                  >
+                    Close
+                  </button>
+                )}
+
                 <button
-                  onClick={handleCloseRunTestModal}
-                  className="px-4 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
-                >
-                  Close
-                </button>
-                <button
+                  onClick={handleNextStep}
                   className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
-                  disabled={!selectedAppId}
+                  disabled={
+                    (currentStep === "select-app" && !selectedAppId) ||
+                    (currentStep === "create-test" &&
+                      (!testName || !selectedOracle))
+                  }
                 >
-                  Submit
+                  Next
                 </button>
               </div>
             </div>
