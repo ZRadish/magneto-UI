@@ -1,0 +1,37 @@
+# Dockerfile.dev
+
+# 1) Use Node.js 18 as the base image (Debian-based)
+FROM --platform=linux/amd64 node:18-bullseye
+
+# 2) Install Python 3.9, Poetry, and Tesseract
+RUN apt-get update && apt-get install -y \
+    tesseract-ocr \
+    python3.9 python3.9-dev python3.9-venv curl g++ libgl1 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -sSL https://install.python-poetry.org | python3.9 -
+ENV PATH="/root/.local/bin:${PATH}"
+
+# 3) Set working directory
+WORKDIR /app
+
+# 4) Copy only package files for Node
+COPY package.json package-lock.json /app/
+RUN npm install
+
+# 5) Copy your Magneto code
+COPY Magneto/oracleFromBehavior /app/magneto/
+
+# 6) Install Python dependencies with Poetry
+WORKDIR /app/magneto
+ENV POETRY_HTTP_TIMEOUT=300
+RUN poetry install --no-root
+
+# 7) Expose ports for backend (5000) and frontend (5173)
+EXPOSE 5000
+
+# 8) Use nodemon for live reload (ensure nodemon is in your devDependencies)
+# CMD ["npm", "run", "dev"]
+
+# Default to a shell; commands will be overridden by docker-compose
+CMD ["sh"]
