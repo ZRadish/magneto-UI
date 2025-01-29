@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Play, Download, Save, Plus, Trash2 } from "lucide-react";
 import { Folder, ChevronDown, ChevronRight } from "lucide-react";
 import SideBar from "../components/SideBar";
-//import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 interface AppTest {
   _id: string;
@@ -76,13 +76,13 @@ const AppRow: React.FC<{
         const mappedTests = data.tests.map((test: any) => ({
           _id: test._id,
           appId: test.appId,
-          testName: test.testName,
-          oraclesSelected: test.oraclesSelected,
-          fileId: test.fileId,
-          status: test.status,
-          result: test.result,
-          notes: test.notes,
-          createdAt: test.createdAt,
+          testName: test.testName || "Untitled Test",
+          oraclesSelected: test.oraclesSelected || [],
+          fileId: test.fileId || null,
+          status: test.status || "Pending",
+          result: test.result || "Not available",
+          notes: test.notes || "No notes",
+          createdAt: test.createdAt || new Date().toISOString(),
           fileName: test.fileName || "no file",
         }));
 
@@ -93,6 +93,7 @@ const AppRow: React.FC<{
         if (error instanceof Error) {
           console.error("Error fetching tests:", error.message);
           setError("No tests available.");
+          setTests([]);
         } else {
           console.error("An unknown error occurred:", error);
           setError("An unknown error occurred while fetching tests.");
@@ -377,7 +378,7 @@ const AppRow: React.FC<{
 };
 
 const Dashboard: React.FC = () => {
-  //const navigate = useNavigate();
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<
     "select-app" | "create-test" | "upload-files"
   >("select-app");
@@ -393,7 +394,7 @@ const Dashboard: React.FC = () => {
   const [testName, setTestName] = useState("");
   const [selectedOracle, setSelectedOracle] = useState<string>("");
   const [testNotes, setTestNotes] = useState("");
-  const [createdTestId] = useState<string | null>(null);
+  const [createdTestId, setCreatedTestId] = useState<string | null>(null);
 
   // Existing apps state
   const [apps, setApps] = useState<
@@ -467,10 +468,19 @@ const Dashboard: React.FC = () => {
 
   const handleAppSelect = (appId: string) => {
     setSelectedAppId(appId);
+    resetTestState(); // Clear all test-related state
+    setCurrentStep("create-test");
+  };
+  const resetTestState = () => {
+    setTestName("");
+    setSelectedOracle("");
+    setTestNotes("");
+    setCreatedTestId(null);
   };
 
   const handleOpenNewModal = () => {
     setIsNewModalOpen(true); // Open the new modal
+    resetTestState();
   };
 
   const handleCloseNewModal = () => {
@@ -642,7 +652,7 @@ const Dashboard: React.FC = () => {
 
         // Optional: Update state or provide user feedback
         setCurrentStep("select-app"); // Return to the previous step
-        alert("Test created successfully!");
+        //alert("Test created successfully!");
       } catch (error: unknown) {
         if (error instanceof Error) {
           console.error("Error creating test:", error.message);
@@ -653,7 +663,7 @@ const Dashboard: React.FC = () => {
         }
       }
 
-      //console.log("create test now");
+      console.log("create test now");
     }
   };
 
