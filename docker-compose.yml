@@ -19,7 +19,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile.frontend
     volumes:
       - ./frontend:/app/frontend
     working_dir: /app/frontend
