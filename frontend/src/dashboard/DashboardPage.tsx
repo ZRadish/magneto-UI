@@ -85,7 +85,6 @@ const AppRow: React.FC<{
           createdAt: test.createdAt || new Date().toISOString(),
           fileName: test.fileName || "no file",
         }));
-
         console.log(mappedTests);
 
         setTests(mappedTests);
@@ -403,10 +402,10 @@ const Dashboard: React.FC = () => {
 
   // Oracle options
   const oracleOptions = [
-    { id: "oracle1", name: "Orientation Change" },
-    { id: "oracle2", name: "Back Button" },
-    { id: "oracle3", name: "Language Detection" },
-    { id: "oracle4", name: "User Input" },
+    { id: "Orientation Change", name: "Orientation Change" },
+    { id: "Back Button", name: "Back Button" },
+    { id: "Language Detection", name: "Language Detection" },
+    { id: "User Input", name: "User Input" },
   ];
 
   // Fetch user apps when the component mounts
@@ -653,6 +652,16 @@ const Dashboard: React.FC = () => {
         // Optional: Update state or provide user feedback
         setCurrentStep("select-app"); // Return to the previous step
         //alert("Test created successfully!");
+        // Extract required data
+        localStorage.setItem("test._id", createdTest.test._id);
+        console.log(createdTest.test._id);
+        const testId = createdTest.test._id;
+        const oracleSelection = selectedOracle;
+        const appId = selectedAppId;
+
+        navigate(
+          `/upload?testId=${testId}&oracleSelection=${oracleSelection}&appId=${appId}`
+        );
       } catch (error: unknown) {
         if (error instanceof Error) {
           console.error("Error creating test:", error.message);

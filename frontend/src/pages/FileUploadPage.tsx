@@ -3,20 +3,16 @@ import axios, { AxiosProgressEvent } from "axios";
 import { motion } from "framer-motion";
 import { UploadCloud, Play, AlertCircle, X, Loader } from "lucide-react";
 import api from "../utils/api";
-
-// Type definitions for oracles
-type OracleId =
-  | "languageChange"
-  | "themeChange"
-  | "userInput"
-  | "rotation"
-  | "backButton";
-
-type SelectedOracles = {
-  [K in OracleId]: boolean;
-};
+import { useLocation, useSearchParams } from "react-router-dom";
 
 const FileUploadPage = () => {
+  const [searchParams] = useSearchParams();
+
+  const testId = searchParams.get("testId");
+  const oracleSelection = searchParams.get("oracleSelection");
+  const appId = searchParams.get("appId");
+  console.log(testId, oracleSelection, appId);
+
   const [files, setFiles] = useState<FileList | null>(null);
   const [progress, setProgress] = useState<{ started: boolean; pc: number }>({
     started: false,
@@ -24,22 +20,6 @@ const FileUploadPage = () => {
   });
   const [msg, setMsg] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
-
-  const [selectedOracles, setSelectedOracles] = useState<SelectedOracles>({
-    languageChange: false,
-    themeChange: false,
-    userInput: false,
-    rotation: false,
-    backButton: false,
-  });
-
-  const oracles: { id: OracleId; label: string }[] = [
-    { id: "languageChange", label: "Language Change" },
-    { id: "themeChange", label: "Theme Change" },
-    { id: "userInput", label: "User Input" },
-    { id: "rotation", label: "Rotation" },
-    { id: "backButton", label: "Back Button" },
-  ];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
@@ -63,23 +43,25 @@ const FileUploadPage = () => {
     }
   };
 
-  const handleOracleChange = (oracleId: OracleId) => {
-    setSelectedOracles((prev) => ({
-      ...prev,
-      [oracleId]: !prev[oracleId],
-    }));
-  };
-
   const uploadFile = async () => {
     if (!files || files.length === 0) {
       setMsg("No files selected. Please choose files to upload.");
       return;
     }
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      setMsg("Authorization token is missing.");
+      return;
+    }
 
     const fd = new FormData();
-    Array.from(files).forEach((file, index) => {
-      fd.append(`file${index}`, file);
+    Array.from(files).forEach((file) => {
+      fd.append(`file`, file);
     });
+
+    if (testId) fd.append("testId", testId);
+    if (oracleSelection) fd.append("oracleSelection", oracleSelection);
+    if (appId) fd.append("appId", appId);
 
     setMsg("Uploading and processing...");
     setProgress((prevState) => ({ ...prevState, started: true }));
@@ -99,6 +81,7 @@ const FileUploadPage = () => {
         },
         headers: {
           "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -114,9 +97,6 @@ const FileUploadPage = () => {
     }
   };
 
-  const atLeastOneOracleSelected = Object.values(selectedOracles).some(
-    (value) => value
-  );
   const hasFiles = files && files.length > 0;
 
   return (
@@ -204,31 +184,6 @@ const FileUploadPage = () => {
               </div>
             )}
 
-            {/* Oracle Selection */}
-            <div className="space-y-4">
-              <h3 className="font-medium text-white">
-                Select Oracles to Test:
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                {oracles.map((oracle) => (
-                  <label
-                    key={oracle.id}
-                    className="flex items-center space-x-2 cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedOracles[oracle.id]}
-                      onChange={() => handleOracleChange(oracle.id)}
-                      className="w-4 h-4 rounded border-gray-500 text-green-500 focus:ring-green-500 focus:ring-offset-gray-800"
-                    />
-                    <span className="text-sm font-medium text-white">
-                      {oracle.label}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
             {/* Progress Bar */}
             {progress.started && (
               <div className="space-y-2">
@@ -245,12 +200,10 @@ const FileUploadPage = () => {
             )}
 
             {/* Validation Messages */}
-            {(!atLeastOneOracleSelected || !hasFiles) && (
+            {!hasFiles && (
               <div className="p-4 bg-red-900/50 border border-red-800 rounded-lg flex items-center space-x-2">
                 <AlertCircle className="h-4 w-4 text-red-400" />
                 <p className="text-white text-sm">
-                  {!atLeastOneOracleSelected &&
-                    "Please select at least one oracle. "}
                   {!hasFiles && "Please upload at least one file."}
                 </p>
               </div>
@@ -269,12 +222,12 @@ const FileUploadPage = () => {
             <button
               className={`w-full py-3 px-4 rounded-lg flex items-center justify-center space-x-2 font-semibold
                 ${
-                  !atLeastOneOracleSelected || !hasFiles
+                  !hasFiles
                     ? "bg-gray-700 text-gray-400 cursor-not-allowed"
                     : "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700"
                 } transition-all duration-200`}
               onClick={uploadFile}
-              disabled={!atLeastOneOracleSelected || !hasFiles}
+              disabled={!hasFiles}
             >
               {progress.started ? (
                 <Loader className="h-4 w-4 animate-spin" />
