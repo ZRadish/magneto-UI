@@ -29,22 +29,20 @@ from reportlab.pdfgen import canvas
 detailedResult = True
 tracePlayerGenerated = True
 
-
 def read_json(jsonName):
     with open(jsonName) as f:
         data = json.load(f)
     return data
-
 
 def load_arguments():
     """construct the argument parse and parse the arguments"""
     ap = argparse.ArgumentParser()
     ap.add_argument("-a", "--appName", required=True, help="app name")
     ap.add_argument("-b", "--bugId", required=True, help="bug id")
-    # Removed the '--pdf' argument, always generating PDF instead
+    # New argument for the unzipped folder path (which should contain the bugId subfolder)
+    ap.add_argument("--unzip-dir", required=True, help="Path to the unzipped folder (contains bugId subfolder)")
     args = vars(ap.parse_args())
     return args
-
 
 def find_trigger(listOfSteps, screen_count_map, listOfTriggerWords, listOfTriggerComponents, args):
     """input: steps list from execution.json
@@ -67,7 +65,6 @@ def find_trigger(listOfSteps, screen_count_map, listOfTriggerWords, listOfTrigge
                 triggerList.append(imageName)
     return triggerList
 
-
 def find_xml_from_screenshot(imagename, stepNum, args):
     """Construct XML file name from screenshot, based on whether it's tracePlayerGenerated or not."""
     xmlName = ""
@@ -78,8 +75,8 @@ def find_xml_from_screenshot(imagename, stepNum, args):
     else:
         xmlName = imagename.split("screen")[0]
         xmlName += "ui-dump.xml"
-    return os.path.join(args["bugId"], xmlName), xmlName
-
+    # Now use the unzip directory along with the bugId folder.
+    return os.path.join(args["unzip_dir"], args["bugId"], xmlName), xmlName
 
 def find_edit_text(listOfSteps, screen_count_map, args):
     """
@@ -101,7 +98,6 @@ def find_edit_text(listOfSteps, screen_count_map, args):
                 screenTextMap[imageNumber] = dynGuiComponentData["text"]
     return screenTextMap
 
-
 def process_image_name(imageName, args):
     """
     Example input:
@@ -111,16 +107,15 @@ def process_image_name(imageName, args):
     """
     num = imageName.split(args["appName"])[1].split("_augmented")[0]
     imageName = imageName.split(".User-Trace")[0]
-    imageName = imageName + "-" + args["bugId"] + "-12-User-Trace-" + num + ".xml"
+    imageName = imageName + "-" + args["bugId"] + "-User-Trace-" + num + ".xml"
     return num, imageName
-
 
 def read_text_in_screen_after_trigger(screen, textInScreenMap, args):
     """Read text from the XML of 'screen' and store in textInScreenMap."""
-    screenName = os.path.join(args["bugId"], screen)
+    # Build full path using unzip_dir and bugId
+    screenName = os.path.join(args["unzip_dir"], args["bugId"], screen)
     textList = xmlUtilities.readTextInXml(screenName)
     textInScreenMap[screen] = textList
-
 
 def create_trigger_component_list():
     listOfTriggerComponents = []
@@ -128,7 +123,6 @@ def create_trigger_component_list():
     listOfTriggerComponents.append("android.widget.ImageButton")
     listOfTriggerComponents.append("android.widget.TextView")
     return listOfTriggerComponents
-
 
 def create_trigger_word_list():
     listOfTriggerWords = []
@@ -139,11 +133,12 @@ def create_trigger_word_list():
     listOfTriggerWords.append("add")
     return listOfTriggerWords
 
-
 def main():
     args = load_arguments()
     bugId = args["bugId"]
-    data = read_json(os.path.join(args["bugId"], f"Execution-{bugId}.json"))
+    unzip_dir = args["unzip_dir"]
+    # Read JSON from the unzip folder (i.e. from: unzip_dir/bugId/Execution-<bugId>.json)
+    data = read_json(os.path.join(unzip_dir, bugId, f"Execution-{bugId}.json"))
 
     listOfTriggerWords = create_trigger_word_list()
     listOfTriggerComponents = create_trigger_component_list()
@@ -181,7 +176,7 @@ def main():
         print("-------------------------------------------------------------------------------------------")
         print("Result for change", str(count + 1))
 
-        # We read the text from the triggered screen
+        # Read the text from the triggered screen (using the full path)
         read_text_in_screen_after_trigger(trigger, textInScreenMap, args)
         trigger_screen_index = screen_count_map.get(trigger, None)
 
@@ -194,7 +189,7 @@ def main():
             first_trigger_screen,
         )
 
-        # keep track of last trigger screen if multiple
+        # Keep track of last trigger screen if multiple
         first_trigger_screen = trigger_screen_index
 
         # Display to terminal (unchanged)
@@ -211,10 +206,9 @@ def main():
             "passed": passed
         })
 
-    # Always generate a PDF
-    pdf_path = os.path.join(bugId, "user_input_report.pdf")
+    # Generate PDF into the bug folder under unzip_dir
+    pdf_path = os.path.join(unzip_dir, bugId, "user_input_report.pdf")
     generate_pdf_report(results_for_pdf, pdf_path)
-
 
 def display_result(result):
     if not result:
@@ -232,7 +226,6 @@ def display_result(result):
             pprint(result)
 
         print("-------------------------------------------------------------------------------------------")
-
 
 def compareText(usertext_screen_map, textInScreenMap, trigger, trigger_screen_index, first_trigger_screen):
     """
@@ -265,7 +258,6 @@ def compareText(usertext_screen_map, textInScreenMap, trigger, trigger_screen_in
             if not entryFlag:
                 result[text] = False
     return result
-
 
 def generate_pdf_report(results_for_pdf, pdf_path):
     """
@@ -345,7 +337,6 @@ def generate_pdf_report(results_for_pdf, pdf_path):
     y_position -= (table_height + 20)
 
     c.save()
-
 
 if __name__ == "__main__":
     main()

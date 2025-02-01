@@ -47,7 +47,11 @@ export const runThemeCheck = async (req, res) => {
 
     // Run the Python script
     const scriptPath = path.join(unzipDir, 'themeCheck.py');
-    const scriptArgs = ['-a', argA, '-b', argB];
+    const scriptArgs = [
+      '-a', argA,
+      '-b', argB,
+      '--unzip-dir', unzipDir // Add the unzipped directory path
+    ];
 
     const pythonProcess = spawn('/root/.local/bin/poetry', ['run', 'python', scriptPath, ...scriptArgs], {
       cwd: '/app/magneto/themeChange', // Correct working directory
@@ -132,7 +136,11 @@ export const runBackButton = async (req, res) => {
 
     // Run the Python script
     const scriptPath = path.join(unzipDir, 'SSIM-withoutReport.py');
-    const scriptArgs = ['-a', argA, '-b', argB];
+    const scriptArgs = [
+      '-a', argA,
+      '-b', argB,
+      '--unzip-dir', unzipDir // Add the unzipped directory path
+    ];
 
     const pythonProcess = spawn('/root/.local/bin/poetry', ['run', 'python', scriptPath, ...scriptArgs], {
       cwd: '/app/magneto/backButton', 
@@ -215,7 +223,11 @@ export const runLanguageDetection = async (req, res) => {
 
     // Run the Python script
     const scriptPath = path.join(unzipDir, 'detectLanguageAll.py');
-    const scriptArgs = ['-a', argA, '-b', argB];
+    const scriptArgs = [
+      '-a', argA,
+      '-b', argB,
+      '--unzip-dir', unzipDir // Add the unzipped directory path
+    ];
 
     const pythonProcess = spawn('/root/.local/bin/poetry', ['run', 'python', scriptPath, ...scriptArgs], {
       cwd: '/app/magneto/languageDetection', // Set working directory to the unzipped directory
@@ -297,7 +309,11 @@ export const runUserEnteredData = async (req, res) => {
 
     // Run the Python script
     const scriptPath = path.join(unzipDir, 'findTriggerCheckInput.py');
-    const scriptArgs = ['-a', argA, '-b', argB];
+    const scriptArgs = [
+      '-a', argA,
+      '-b', argB,
+      '--unzip-dir', unzipDir // Add the unzipped directory path
+    ];
 
     const pythonProcess = spawn('/root/.local/bin/poetry', ['run', 'python', scriptPath, ...scriptArgs], {
       cwd: '/app/magneto/userEnteredData', // Set working directory to the unzipped directory
