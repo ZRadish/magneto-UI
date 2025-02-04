@@ -10,7 +10,7 @@ const testSchema = new mongoose.Schema({
     type: String, 
     enum: ['completed', 'pending'], 
     default: 'pending' 
-  }, // Status of the test
+  }, // Status of the tests
   result: { type: String, default: '' }, // Result of the test
   notes: { type: String, default: '' }, // Notes for the test
   createdAt: { type: Date, default: Date.now }, // Date when the test was created

@@ -4,6 +4,8 @@ import path from 'path';
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
 import * as fileController from '../controllers/fileController.js';
+import jwt from 'jsonwebtoken';
+import * as fileController from '../controllers/fileController.js';
 
 const router = express.Router();
 
@@ -39,6 +41,7 @@ const storage = multer.diskStorage({
     cb(null, file.originalname);
   },
 });
+
 
 const upload = multer({ storage });
 

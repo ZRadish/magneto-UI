@@ -1,26 +1,27 @@
-import React, { useState } from "react";
-// import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
 import { Play, Download, Save, Plus, Trash2 } from "lucide-react";
 import { Folder, ChevronDown, ChevronRight } from "lucide-react";
 import SideBar from "../components/SideBar";
-// import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 interface AppTest {
-  id: string;
-  name: string;
-  dateTime: string;
-  oracles: {
-    language: string;
-    theme: string;
-    orientation: string;
-  };
+  _id: string;
+  appId: string;
+  userId: string;
+  testName: string;
+  oracleSelected: string;
+  fileId: string;
+  status: "completed" | "pending";
+  result: string;
   notes: string;
-  results: string;
+  createdAt: string;
+  fileName?: string; // From the API join
 }
 
 interface App {
   id: string;
   name: string;
+  description: string;
   tests: AppTest[];
 }
 
@@ -34,23 +35,145 @@ const AppRow: React.FC<{
     testId: string;
   } | null>(null);
   const [editableNotes, setEditableNotes] = useState("");
+  const [tests, setTests] = useState<AppTest[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [modalContent, setModalContent] = useState<string>("");
 
-  const handleDownload = (e: React.MouseEvent, test: AppTest) => {
-    e.stopPropagation(); // Prevent triggering other click events
-    const element = document.createElement("a");
-    const file = new Blob([test.results], { type: "text/plain" });
-    element.href = URL.createObjectURL(file);
-    element.download = `${test.name}-results.txt`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+  useEffect(() => {
+    const fetchTests = async () => {
+      if (!isExpanded) return;
+
+      setIsLoading(true);
+      setError(null);
+      const token = localStorage.getItem("authToken");
+
+      if (!token) {
+        setError("Authentication token not found");
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const url = `${import.meta.env.VITE_API_URL}/test/${
+          app.id
+        }?nocache=${Date.now()}`;
+
+        const response = await fetch(url, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch tests: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Received data:", data);
+        // Map the API response to match our interface
+        const mappedTests = data.tests.map((test: any) => ({
+          _id: test._id,
+          appId: test.appId,
+          testName: test.testName || "Untitled Test",
+          oracleSelected: test.oracleSelected || "",
+          fileId: test.fileId || null,
+          status: test.status || "Pending",
+          result: test.result || "Not available",
+          notes: test.notes || "No notes",
+          createdAt: test.createdAt || new Date().toISOString(),
+          fileName: test.fileName || "no file",
+        }));
+        console.log(mappedTests);
+
+        setTests(mappedTests);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error("Error fetching tests:", error.message);
+          setError("No tests available.");
+          setTests([]);
+        } else {
+          console.error("An unknown error occurred:", error);
+          setError("An unknown error occurred while fetching tests.");
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTests();
+  }, [app.id, isExpanded]);
+
+  const handleFileDownload = async (e: React.MouseEvent, test: AppTest) => {
+    e.stopPropagation();
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      alert("Authentication token not found");
+      return;
+    }
+    if (!test.fileId) {
+      alert("No file available for download");
+      return;
+    }
+    try {
+      // Create a temporary anchor element for the download
+      const a = document.createElement("a");
+      // Set the href to the file download endpoint
+      a.href = `${import.meta.env.VITE_API_URL}/files/${test.fileId}`;
+      // Add the auth token to the href
+      if (token) {
+        a.href += `?token=${token}`;
+      }
+      // Set download attribute (optional filename)
+      if (test.fileName) {
+        a.download = test.fileName;
+      }
+      // Hide the anchor
+      a.style.display = "none";
+      // Add to document
+      document.body.appendChild(a);
+      // Trigger click
+      a.click();
+      // Cleanup
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error("Error initiating download:", err);
+      alert("Failed to download file. Please try again.");
+    }
   };
 
-  const openModal = (type: "notes" | "results", testId: string) => {
+  const handleResultsDownload = async (e: React.MouseEvent, test: AppTest) => {
+    e.stopPropagation();
+    if (!test.result) {
+      alert("No results available for download");
+      return;
+    }
+
+    try {
+      const blob = new Blob([test.result], { type: "text/plain" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${test.testName}-results.txt`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error("Error downloading results:", err);
+      alert(err instanceof Error ? err.message : "Failed to download results");
+    }
+  };
+
+  const openModal = async (type: "notes" | "results", testId: string) => {
     setActiveModal({ type, testId });
+    const test = tests.find((t) => t._id === testId);
+
     if (type === "notes") {
-      const test = app.tests.find((t) => t.id === testId);
       setEditableNotes(test?.notes || "");
+    } else if (type === "results") {
+      setModalContent(test?.result || "No results available");
     }
   };
 
@@ -62,100 +185,179 @@ const AppRow: React.FC<{
   };
 
   return (
-    <div className="border border-violet-900 rounded-lg mb-4 hover:border-violet-700 transition-colors hover:shadow-lg hover:shadow-violet-900/50">
+    <div className="border border-violet-900 rounded-xl p-2 mb-6 hover:border-violet-700 transition-colors hover:shadow-lg hover:shadow-violet-900/50">
       <div
-        className="flex items-center p-4 cursor-pointer bg-gray-900"
+        className="flex items-center p-6 cursor-pointer bg-gray-900 rounded-t-xl"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <Folder className="mr-2 text-violet-500" size={20} />
-        <span className="flex-grow text-gray-400">{app.name}</span>
+        <Folder className="mr-3 text-violet-500" size={24} />
+        <span className="flex-grow text-gray-400 text-lg">{app.name}</span>
         {isExpanded ? (
-          <ChevronDown size={20} className="text-violet-500" />
+          <ChevronDown size={24} className="text-violet-500" />
         ) : (
-          <ChevronRight size={20} className="text-violet-500" />
+          <ChevronRight size={24} className="text-violet-500" />
         )}
       </div>
 
       {isExpanded && (
-        <div className="p-4 bg-gray-900/50">
-          <table className="w-full">
-            <thead>
-              <tr className="text-left text-gray-400">
-                <th className="p-2">Test</th>
-                <th className="p-2">Date/Time</th>
-                <th className="p-2">Oracles</th>
-                <th className="p-2">Notes</th>
-                <th className="p-2">Results</th>
-              </tr>
-            </thead>
-            <tbody className="text-gray-400">
-              {app.tests.map((test) => (
-                <tr key={test.id}>
-                  <td className="p-2">{test.name}</td>
-                  <td className="p-2">{test.dateTime}</td>
-                  <td className="p-2">
-                    <div className="space-y-1">
-                      <div>Language: {test.oracles.language}</div>
-                      <div>Theme: {test.oracles.theme}</div>
-                      <div>Orientation: {test.oracles.orientation}</div>
-                    </div>
-                  </td>
-                  <td className="p-2">
-                    <button
-                      className="text-violet-500 hover:text-violet-400 transition-colors"
-                      onClick={() => openModal("notes", test.id)}
-                    >
-                      View/Edit Notes
-                    </button>
-                  </td>
-                  <td className="p-2">
-                    <div className="flex items-center gap-2">
-                      <button
-                        className="text-violet-500 hover:text-violet-400 transition-colors"
-                        onClick={() => openModal("results", test.id)}
-                      >
-                        View Results
-                      </button>
-                      <button
-                        className="text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20"
-                        onClick={(e) => handleDownload(e, test)}
-                        title="Download Results"
-                      >
-                        <Download size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="p-6 bg-gray-900/50">
+          <div className="text-gray-400 mb-6 border border-gray-700 rounded-xl p-4">
+            <p>{app.description}</p>
+          </div>
+
+          {isLoading && (
+            <div className="text-gray-400 text-center py-6">
+              Loading tests...
+            </div>
+          )}
+
+          {error && (
+            <div className="text-red-500 text-center py-6">{error}</div>
+          )}
+
+          {!isLoading && !error && tests.length === 0 && (
+            <div className="text-gray-400 text-center py-6">
+              No tests found for this app
+            </div>
+          )}
+
+          {!isLoading && !error && tests.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-left text-gray-400">
+                    <th className="p-3">Test Name</th>
+                    <th className="p-3">File</th>
+                    <th className="p-3">Created At</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3">Oracles Selected</th>
+                    <th className="p-3">Notes</th>
+                    <th className="p-3">Results</th>
+                  </tr>
+                </thead>
+                <tbody className="text-gray-400">
+                  {tests.map((test) => (
+                    <tr key={test._id}>
+                      <td className="p-3">{test.testName}</td>
+                      <td className="p-3">
+                        {test.fileId ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-400">
+                              {test.fileName}
+                            </span>
+                            <button
+                              className="text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20"
+                              onClick={(e) => handleFileDownload(e, test)}
+                              title="Download File"
+                            >
+                              <Download size={16} />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-red-500">No file</span>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        {new Date(test.createdAt).toLocaleString()}
+                      </td>
+                      <td className="p-3">
+                        <span
+                          className={`px-3 py-1.5 rounded-full text-xs ${
+                            test.status === "completed"
+                              ? "bg-green-500/20 text-green-400"
+                              : "bg-yellow-500/20 text-yellow-400"
+                          }`}
+                        >
+                          {test.status}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex flex-col gap-1.5">
+                          {test.oracleSelected &&
+                            (() => {
+                              const colorClass =
+                                {
+                                  "Orientation Change":
+                                    "bg-green-900/20 text-center text-green-400",
+                                  "Back Button":
+                                    "bg-blue-900/20 text-center text-blue-400",
+                                  "Language Detection":
+                                    "bg-red-900/20 text-center text-red-400",
+                                  "User Input":
+                                    "bg-yellow-900/20 text-center text-yellow-400",
+                                }[test.oracleSelected] ||
+                                "bg-violet-900/20 text-violet-400";
+
+                              return (
+                                <span
+                                  className={`px-3 py-1.5 ${colorClass} rounded-full text-xs w-44`}
+                                >
+                                  {test.oracleSelected}
+                                </span>
+                              );
+                            })()}
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <button
+                          className="text-violet-500 hover:text-violet-400 transition-colors"
+                          onClick={() => openModal("notes", test._id)}
+                        >
+                          {test.notes ? "View/Edit" : "Add Notes"}
+                        </button>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <button
+                            className="text-violet-500 hover:text-violet-400 transition-colors"
+                            onClick={() => openModal("results", test._id)}
+                          >
+                            View
+                          </button>
+                          {test.result && (
+                            <button
+                              className="text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20"
+                              onClick={(e) => handleResultsDownload(e, test)}
+                              title="Download Results"
+                            >
+                              <Download size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
       {activeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-900 p-6 rounded-lg max-w-2xl w-full border border-violet-900">
-            <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
+          <div className="bg-gray-900 p-8 rounded-xl max-w-2xl w-full border border-violet-900">
+            <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
               {activeModal.type === "notes" ? "Notes" : "Results"}
             </h2>
             <div className="max-h-96 overflow-y-auto">
               {activeModal.type === "notes" ? (
                 <textarea
-                  className="w-full h-64 bg-gray-800 text-gray-300 p-4 rounded-lg border border-violet-900 focus:border-violet-700 focus:outline-none resize-none"
+                  className="w-full h-64 bg-gray-800 text-gray-300 p-6 rounded-xl border border-violet-900 focus:border-violet-700 focus:outline-none resize-none"
                   value={editableNotes}
                   onChange={(e) => setEditableNotes(e.target.value)}
                   placeholder="Enter your notes here..."
                 />
               ) : (
-                <div className="text-gray-400">
-                  {app.tests.find((t) => t.id === activeModal.testId)?.results}
-                </div>
+                <pre className="text-gray-400 whitespace-pre-wrap p-6 bg-gray-800 rounded-xl">
+                  {modalContent}
+                </pre>
               )}
             </div>
-            <div className="mt-4 flex justify-end gap-4">
+            <div className="mt-6 flex justify-end gap-4">
               {activeModal.type === "notes" && (
                 <button
-                  className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+                  className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-xl hover:opacity-90 transition-opacity flex items-center gap-2"
                   onClick={handleSaveNotes}
                 >
                   <Save size={16} />
@@ -163,7 +365,7 @@ const AppRow: React.FC<{
                 </button>
               )}
               <button
-                className="px-4 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
+                className="px-6 py-3 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-xl hover:opacity-90 transition-opacity"
                 onClick={() => setActiveModal(null)}
               >
                 Close
@@ -177,7 +379,10 @@ const AppRow: React.FC<{
 };
 
 const Dashboard: React.FC = () => {
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState<
+    "select-app" | "create-test" | "upload-files"
+  >("select-app");
   const [isRunTestModalOpen, setIsRunTestModalOpen] = useState(false);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -185,6 +390,74 @@ const Dashboard: React.FC = () => {
   const [appToDelete, setAppToDelete] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [newAppName, setNewAppName] = useState("");
+
+  // New state for test creation
+  const [testName, setTestName] = useState("");
+  const [selectedOracle, setSelectedOracle] = useState<string>("");
+  const [testNotes, setTestNotes] = useState("");
+  const [createdTestId, setCreatedTestId] = useState<string | null>(null);
+
+  // Existing apps state
+  const [apps, setApps] = useState<
+    { id: string; name: string; description: string; tests: any[] }[]
+  >([]);
+
+  // Oracle options
+  const oracleOptions = [
+    { id: "Orientation Change", name: "Orientation Change" },
+    { id: "Back Button", name: "Back Button" },
+    { id: "Language Detection", name: "Language Detection" },
+    { id: "User Input", name: "User Input" },
+  ];
+
+  // Fetch user apps when the component mounts
+  useEffect(() => {
+    const fetchUserApps = async () => {
+      const token = localStorage.getItem("authToken");
+      const userId = localStorage.getItem("UserId");
+      if (!token) {
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/app/${userId}?nocache=${Date.now()}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch apps");
+        }
+
+        //const { apps } = await response.json();
+        //setApps(apps); // Set apps from the response
+        const data = await response.json();
+        setApps(
+          data.apps.map((app: any) => ({
+            id: app._id,
+            name: app.appName,
+            description: app.description,
+            tests: app.tests || [],
+          }))
+        );
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error("Error fetching apps:", error.message);
+          alert("Failed to fetch apps. Please try again.");
+        } else {
+          console.error("An unknown error occurred:", error);
+          alert("Failed to fetch apps. Please try again.");
+        }
+      }
+    };
+
+    fetchUserApps();
+  }, []);
 
   const handleOpenRunTestModal = () => {
     setIsRunTestModalOpen(true);
@@ -196,54 +469,24 @@ const Dashboard: React.FC = () => {
 
   const handleAppSelect = (appId: string) => {
     setSelectedAppId(appId);
+    resetTestState(); // Clear all test-related state
+    setCurrentStep("create-test");
+  };
+  const resetTestState = () => {
+    setTestName("");
+    setSelectedOracle("");
+    setTestNotes("");
+    setCreatedTestId(null);
   };
 
   const handleOpenNewModal = () => {
     setIsNewModalOpen(true); // Open the new modal
+    resetTestState();
   };
 
   const handleCloseNewModal = () => {
     setIsNewModalOpen(false); // Close the new modal
   };
-
-  const [apps, setApps] = useState<App[]>([
-    {
-      id: "1",
-      name: "App 1",
-      tests: [
-        {
-          id: "1",
-          name: "12.zip",
-          dateTime: "2024-01-14 10:00",
-          oracles: {
-            language: "English",
-            theme: "Dark",
-            orientation: "LTR",
-          },
-          notes: "Test notes for App 1",
-          results: "Test results for App 1",
-        },
-      ],
-    },
-    {
-      id: "2",
-      name: "App 2",
-      tests: [
-        {
-          id: "1",
-          name: "13.zip",
-          dateTime: "2024-01-14 11:00",
-          oracles: {
-            language: "French",
-            theme: "Light",
-            orientation: "RTL",
-          },
-          notes: "Test notes for App 2",
-          results: "Test results for App 2",
-        },
-      ],
-    },
-  ]);
 
   const handleCreateApp = async () => {
     if (!newAppName || !description) {
@@ -253,7 +496,7 @@ const Dashboard: React.FC = () => {
     const token = localStorage.getItem("authToken");
     console.log(token);
     try {
-      const response = await fetch("http://localhost:5000/api/app", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/app`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -277,20 +520,22 @@ const Dashboard: React.FC = () => {
         {
           id: app._id,
           name: app.appName,
+          description: app.description,
           tests: [],
         },
       ]);
 
-      setIsNewModalOpen(false);
-      setNewAppName("");
-      setDescription("");
-    } catch (error) {
+      setIsNewModalOpen(false); // Close the modal
+      setNewAppName(""); // Reset the input
+      setDescription(""); // Reset the description
+    } catch (error: unknown) {
       if (error instanceof Error) {
-        console.error("Error creating app:", error.message);
+        console.error("Error fetching apps:", error.message);
+        alert("Failed to fetch apps. Please try again.");
       } else {
-        console.error("Error creating app:", String(error));
+        console.error("An unknown error occurred:", error);
+        alert("Failed to fetch apps. Please try again.");
       }
-      alert("Failed to create app. Please try again.");
     }
   };
 
@@ -321,14 +566,14 @@ const Dashboard: React.FC = () => {
     console.log("user:", userId);
     try {
       const response = await fetch(
-        `http://localhost:5000/api/apps/${appToDelete}`,
+        `${import.meta.env.VITE_API_URL}/app/${appToDelete}`,
         {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          //body: JSON.stringify({ appToDelete }),
+          body: JSON.stringify({ appToDelete }),
         }
       );
 
@@ -340,13 +585,14 @@ const Dashboard: React.FC = () => {
 
       setAppToDelete(null);
       setIsDeleteModalOpen(false);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof Error) {
-        console.error("Error deleting app:", error.message);
+        console.error("Error fetching apps:", error.message);
+        alert("Failed to fetch apps. Please try again.");
       } else {
-        console.error("Error deleting app:", String(error));
+        console.error("An unknown error occurred:", error);
+        alert("Failed to fetch apps. Please try again.");
       }
-      alert("Failed to delete app. Please try again.");
     }
   };
 
@@ -359,6 +605,190 @@ const Dashboard: React.FC = () => {
         ),
       }))
     );
+  };
+
+  const handleNextStep = async () => {
+    if (currentStep === "select-app" && selectedAppId) {
+      setCurrentStep("create-test");
+    } else if (currentStep === "create-test") {
+      const token = localStorage.getItem("authToken");
+
+      if (!token) {
+        alert("Authorization token is missing");
+        return;
+      }
+
+      if (!testName || !selectedOracle) {
+        alert("Please provide a Test Name and select an Oracle.");
+        return;
+      }
+
+      console.log("the oracle to be put into payload: ", selectedOracle);
+
+      const testPayload = {
+        appId: selectedAppId,
+        testName: testName,
+        oracleSelected: selectedOracle,
+        notes: testNotes,
+        dateTime: new Date().toISOString(),
+        fileId: createdTestId || null,
+      };
+
+      console.log("Creating test with payload:", testPayload);
+
+      // Create test API call
+
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/test`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(testPayload),
+        });
+        if (!response.ok) {
+          throw new Error("Failed to create test");
+        }
+        const createdTest = await response.json();
+        console.log("Test created successfully:", createdTest);
+        console.log("Oracle selected: ", createdTest.test.oracleSelected);
+
+        // Optional: Update state or provide user feedback
+        setCurrentStep("select-app"); // Return to the previous step
+        //alert("Test created successfully!");
+        // Extract required data
+        localStorage.setItem("test._id", createdTest.test._id);
+        console.log(createdTest.test._id);
+        const testId = createdTest.test._id;
+        const oracleSelection = selectedOracle;
+        const appId = selectedAppId;
+
+        navigate(
+          `/upload?testId=${testId}&oracleSelected=${oracleSelection}&appId=${appId}`
+        );
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error("Error creating test:", error.message);
+          alert("Failed to create test. Please try again.");
+        } else {
+          console.error("An unknown error occurred:", error);
+          alert("Failed to create test. Please try again.");
+        }
+      }
+
+      console.log("create test now");
+    }
+  };
+
+  const handleBackStep = () => {
+    if (currentStep === "create-test") {
+      setCurrentStep("select-app");
+    }
+  };
+
+  const renderModalContent = () => {
+    switch (currentStep) {
+      case "select-app":
+        return (
+          <>
+            <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
+              Select App
+            </h2>
+            <p className="text-gray-400 mb-4">
+              Select an app folder to configure and run the test.
+            </p>
+            <button
+              onClick={handleOpenNewModal}
+              className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2"
+            >
+              <Plus size={16} />
+              <span>New</span>
+            </button>
+
+            {apps.map((app) => (
+              <div
+                key={app.id}
+                onClick={() => handleAppSelect(app.id)}
+                className={`relative border border-violet-900 rounded-lg mb-4 cursor-pointer ${
+                  selectedAppId === app.id
+                    ? "bg-violet-900/50"
+                    : "hover:border-violet-700 transition-colors hover:shadow-lg hover:shadow-violet-900/50"
+                }`}
+              >
+                <div className="flex items-center p-4">
+                  <Folder className="mr-2 text-violet-500" size={20} />
+                  <span className="flex-grow text-gray-400">{app.name}</span>
+                  <ChevronRight size={20} className="text-violet-500" />
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenDeleteModal(app.id);
+                  }}
+                  className="absolute top-4 right-4 px-3 py-2 bg-red-600 text-white rounded-full hover:opacity-80 transition-opacity"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+          </>
+        );
+
+      case "create-test":
+        return (
+          <>
+            <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
+              Create Test
+            </h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-gray-200 mb-2">Test Name</label>
+                <input
+                  className="w-full p-4 bg-gray-800 text-gray-300 border border-violet-900 rounded-lg focus:outline-none"
+                  placeholder="Enter test name"
+                  value={testName}
+                  onChange={(e) => setTestName(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-200 mb-2">Oracle type</label>
+                <select
+                  className="w-full p-4 bg-gray-800 text-gray-300 border border-violet-900 rounded-lg focus:outline-none"
+                  value={selectedOracle}
+                  onChange={(e) => {
+                    console.log("Selected Oracle:", e.target.value);
+                    setSelectedOracle(e.target.value);
+                  }}
+                >
+                  <option value="">Select an oracle</option>
+                  {oracleOptions.map((oracle) => (
+                    <option key={oracle.id} value={oracle.id}>
+                      {oracle.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-gray-200 mb-2">Notes</label>
+                <textarea
+                  className="w-full p-4 bg-gray-800 text-gray-300 border border-violet-900 rounded-lg focus:outline-none"
+                  placeholder="Add any notes about this test"
+                  value={testNotes}
+                  onChange={(e) => setTestNotes(e.target.value)}
+                  rows={4}
+                />
+              </div>
+            </div>
+          </>
+        );
+
+      default:
+        return null;
+    }
   };
 
   return (
@@ -381,81 +811,55 @@ const Dashboard: React.FC = () => {
           </button>
         </div>
 
-        <div className="space-y-4">
+        <div
+          className="space-y-4 h-[calc(100vh-200px)] overflow-auto bg-gray-800 rounded-lg p-4 shadow-lg"
+          style={{
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+          }}
+        >
           {apps.map((app) => (
-            <AppRow key={app.id} app={app} onUpdateNotes={handleUpdateNotes} />
+            <div key={app.id}>
+              <AppRow app={app} onUpdateNotes={handleUpdateNotes} />
+            </div>
           ))}
         </div>
+
         {/* Run Test Modal */}
+        {/* Updated Modal */}
         {isRunTestModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="relative bg-gray-900 p-6 rounded-lg max-w-2xl w-full border border-violet-900">
-              <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
-                Run Test
-              </h2>
-              <p className="text-gray-400 mb-4">
-                Select an app folder to configure and run the test.
-              </p>
-              {/* New Button */}
-              <button
-                onClick={handleOpenNewModal}
-                className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2"
-              >
-                <Plus size={16} />
-                <span>New</span>
-              </button>
-
-              {/* Render App Folders Dynamically */}
-              {/*apps.map((app) => (
-        <div key={app.id} className="border border-violet-900 rounded-lg mb-4 hover:border-violet-700 transition-colors hover:shadow-lg hover:shadow-violet-900/50">
-          <div className="flex items-center p-4 cursor-pointer bg-gray-900">
-            <Folder className="mr-2 text-violet-500" size={20} />
-            <span className="flex-grow text-gray-400">{app.name}</span>
-            <ChevronRight size={20} className="text-violet-500" />
-          </div>
-        </div>
-      ))*/}
-
-              {apps.map((app) => (
-                <div
-                  key={app.id}
-                  onClick={() => handleAppSelect(app.id)}
-                  className={`relative border border-violet-900 rounded-lg mb-4 cursor-pointer ${
-                    selectedAppId === app.id
-                      ? "bg-violet-900/50"
-                      : "hover:border-violet-700 transition-colors hover:shadow-lg hover:shadow-violet-900/50"
-                  }`}
-                >
-                  <div className="flex items-center p-4">
-                    <Folder className="mr-2 text-violet-500" size={20} />
-                    <span className="flex-grow text-gray-400">{app.name}</span>
-                    <ChevronRight size={20} className="text-violet-500" />
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent the onClick from being triggered on the folder container
-                      handleOpenDeleteModal(app.id);
-                    }}
-                    className="absolute top-4 right-4 px-3 py-2 bg-red-600 text-white rounded-full hover:opacity-80 transition-opacity"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))}
+              {renderModalContent()}
 
               {/* Modal Actions */}
               <div className="mt-4 flex justify-between gap-4">
+                {currentStep === "create-test" ? (
+                  <button
+                    onClick={handleBackStep}
+                    className="px-4 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
+                  >
+                    Back
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setIsRunTestModalOpen(false)}
+                    className="px-4 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
+                  >
+                    Close
+                  </button>
+                )}
+
                 <button
-                  onClick={handleCloseRunTestModal}
-                  className="px-4 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
-                >
-                  Close
-                </button>
-                <button
+                  onClick={handleNextStep}
                   className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
-                  disabled={!selectedAppId}
+                  disabled={
+                    (currentStep === "select-app" && !selectedAppId) ||
+                    (currentStep === "create-test" &&
+                      (!testName || !selectedOracle))
+                  }
                 >
-                  Submit
+                  Next
                 </button>
               </div>
             </div>
