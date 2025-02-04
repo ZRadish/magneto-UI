@@ -4,7 +4,7 @@ const testSchema = new mongoose.Schema({
   appId: { type: mongoose.Schema.Types.ObjectId, ref: 'App', required: true }, // Reference to the associated App
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Reference to the associated User
   testName: { type: String, required: true }, // Name of the test
-  oracleSelected: { type: [String], default: [] }, // Oracles selected for the test
+  oracleSelected: { type: String, required: true }, // Oracle selected for the test
   fileId: { type: mongoose.Schema.Types.ObjectId, ref: 'files.files', default: null }, // Default to null
   status: { 
     type: String, 

@@ -6,7 +6,7 @@ export const createTestService = async ({
   appId,
   userId,
   testName,
-  oraclesSelected,
+  oracleSelected,
   notes,
   dateTime,
   fileId = null, // Default fileId to null
@@ -28,7 +28,7 @@ export const createTestService = async ({
           appId: appObjectId,
           userId: userObjectId,
           testName,
-          oraclesSelected,
+          oracleSelected,
           notes,
           dateTime,
           fileId: fileObjectId, // Include fileId
