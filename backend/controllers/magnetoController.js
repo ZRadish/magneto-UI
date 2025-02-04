@@ -1,11 +1,11 @@
-import { spawn } from 'child_process';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
+import { spawn } from 'child_process';
 import { updateTestAfterRun } from '../services/testService.js';
 import { storePdfInGridFS } from '../services/fileService.js';
 
 /**
- * Utility function to execute Python scripts while ensuring dependencies are copied first
+ * Utility function to execute Python scripts, save PDFs, and clean up temp files
  */
 const executePythonScript = async (scriptDir, scriptName, pdfName, dependencies, req, res) => {
   const { argA, argB, testId } = req.body;
@@ -59,6 +59,11 @@ const executePythonScript = async (scriptDir, scriptName, pdfName, dependencies,
         console.log('[BACKEND] Storing PDF in GridFS...');
         const pdfFileId = await storePdfInGridFS(testId, path.basename(pdfPath), argB);
         console.log(`[BACKEND] PDF saved in GridFS with ID: ${pdfFileId}`);
+
+        // If everything is successful, delete the unzipped directory
+        console.log(`[BACKEND] Deleting unzipped folder: ${unzipDir}`);
+        fs.rmSync(unzipDir, { recursive: true, force: true });
+        console.log(`[BACKEND] Successfully deleted: ${unzipDir}`);
       } catch (error) {
         console.error('[BACKEND] Error storing PDF:', error.message);
       }
