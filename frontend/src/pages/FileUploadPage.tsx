@@ -9,7 +9,7 @@ const FileUploadPage = () => {
   const [searchParams] = useSearchParams();
 
   const testId = searchParams.get("testId");
-  const oracleSelection = searchParams.get("oracleSelection");
+  const oracleSelection = searchParams.get("oracleSelected");
   const appId = searchParams.get("appId");
   console.log(testId, oracleSelection, appId);
 
@@ -60,7 +60,7 @@ const FileUploadPage = () => {
     });
 
     if (testId) fd.append("testId", testId);
-    if (oracleSelection) fd.append("oracleSelection", oracleSelection);
+    if (oracleSelection) fd.append("oracleSelected", oracleSelection);
     if (appId) fd.append("appId", appId);
 
     setMsg("Uploading and processing...");

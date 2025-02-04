@@ -9,7 +9,7 @@ interface AppTest {
   appId: string;
   userId: string;
   testName: string;
-  oraclesSelected: string[];
+  oracleSelected: string;
   fileId: string;
   status: "completed" | "pending";
   result: string;
@@ -77,7 +77,7 @@ const AppRow: React.FC<{
           _id: test._id,
           appId: test.appId,
           testName: test.testName || "Untitled Test",
-          oraclesSelected: test.oraclesSelected || [],
+          oracleSelected: test.oracleSelected || "",
           fileId: test.fileId || null,
           status: test.status || "Pending",
           result: test.result || "Not available",
@@ -273,27 +273,29 @@ const AppRow: React.FC<{
                       </td>
                       <td className="p-3">
                         <div className="flex flex-col gap-1.5">
-                          {test.oraclesSelected.map((oracle, index) => {
-                            const colorClass =
-                              {
-                                "Orientation Change":
-                                  "bg-green-900/20 text-green-400",
-                                "Back Button": "bg-blue-900/20 text-blue-400",
-                                "Language Detection":
-                                  "bg-red-900/20 text-red-400",
-                                "User Input":
-                                  "bg-yellow-900/20 text-yellow-400",
-                              }[oracle] || "bg-violet-900/20 text-violet-400";
+                          {test.oracleSelected &&
+                            (() => {
+                              const colorClass =
+                                {
+                                  "Orientation Change":
+                                    "bg-green-900/20 text-center text-green-400",
+                                  "Back Button":
+                                    "bg-blue-900/20 text-center text-blue-400",
+                                  "Language Detection":
+                                    "bg-red-900/20 text-center text-red-400",
+                                  "User Input":
+                                    "bg-yellow-900/20 text-center text-yellow-400",
+                                }[test.oracleSelected] ||
+                                "bg-violet-900/20 text-violet-400";
 
-                            return (
-                              <span
-                                key={index}
-                                className={`px-3 py-1.5 ${colorClass} rounded-full text-xs w-44`}
-                              >
-                                {oracle}
-                              </span>
-                            );
-                          })}
+                              return (
+                                <span
+                                  className={`px-3 py-1.5 ${colorClass} rounded-full text-xs w-44`}
+                                >
+                                  {test.oracleSelected}
+                                </span>
+                              );
+                            })()}
                         </div>
                       </td>
                       <td className="p-3">
@@ -621,10 +623,12 @@ const Dashboard: React.FC = () => {
         return;
       }
 
+      console.log("the oracle to be put into payload: ", selectedOracle);
+
       const testPayload = {
         appId: selectedAppId,
         testName: testName,
-        oracleId: selectedOracle,
+        oracleSelected: selectedOracle,
         notes: testNotes,
         dateTime: new Date().toISOString(),
         fileId: createdTestId || null,
@@ -648,6 +652,7 @@ const Dashboard: React.FC = () => {
         }
         const createdTest = await response.json();
         console.log("Test created successfully:", createdTest);
+        console.log("Oracle selected: ", createdTest.test.oracleSelected);
 
         // Optional: Update state or provide user feedback
         setCurrentStep("select-app"); // Return to the previous step
@@ -660,7 +665,7 @@ const Dashboard: React.FC = () => {
         const appId = selectedAppId;
 
         navigate(
-          `/upload?testId=${testId}&oracleSelection=${oracleSelection}&appId=${appId}`
+          `/upload?testId=${testId}&oracleSelected=${oracleSelection}&appId=${appId}`
         );
       } catch (error: unknown) {
         if (error instanceof Error) {
@@ -749,13 +754,14 @@ const Dashboard: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-gray-200 mb-2">
-                  Select Oracle
-                </label>
+                <label className="block text-gray-200 mb-2">Oracle type</label>
                 <select
                   className="w-full p-4 bg-gray-800 text-gray-300 border border-violet-900 rounded-lg focus:outline-none"
                   value={selectedOracle}
-                  onChange={(e) => setSelectedOracle(e.target.value)}
+                  onChange={(e) => {
+                    console.log("Selected Oracle:", e.target.value);
+                    setSelectedOracle(e.target.value);
+                  }}
                 >
                   <option value="">Select an oracle</option>
                   {oracleOptions.map((oracle) => (
