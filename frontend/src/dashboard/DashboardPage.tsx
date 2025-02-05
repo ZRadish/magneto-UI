@@ -277,12 +277,12 @@ const AppRow: React.FC<{
                             (() => {
                               const colorClass =
                                 {
-                                  "Orientation Change":
+                                  "Theme Check":
                                     "bg-green-900/20 text-center text-green-400",
                                   "Back Button":
                                     "bg-blue-900/20 text-center text-blue-400",
                                   "Language Detection":
-                                    "bg-red-900/20 text-center text-red-400",
+                                    "bg-pink-900/20 text-center text-pink-400",
                                   "User Input":
                                     "bg-yellow-900/20 text-center text-yellow-400",
                                 }[test.oracleSelected] ||
@@ -404,7 +404,7 @@ const Dashboard: React.FC = () => {
 
   // Oracle options
   const oracleOptions = [
-    { id: "Orientation Change", name: "Orientation Change" },
+    { id: "Theme Check", name: "Theme Check" },
     { id: "Back Button", name: "Back Button" },
     { id: "Language Detection", name: "Language Detection" },
     { id: "User Input", name: "User Input" },
