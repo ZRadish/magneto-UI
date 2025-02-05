@@ -7,7 +7,6 @@ import cv2
 import json
 import os, sys
 from pathlib import Path
-
 import warnings
 warnings.filterwarnings("ignore", message="Failed to load image Python extension")
 
@@ -20,11 +19,36 @@ import imageUtilities as imgUtil
 import labelPredictor
 
 from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 from reportlab.platypus import Table, TableStyle
 from reportlab.lib import colors
-from reportlab.pdfgen import canvas
 
-# To display detailed result to developer
+import io
+
+# ------------------ DUO LOGGING SETUP ------------------
+class MultiLogger:
+    """
+    Sends all 'print' output to both the real console and an in-memory buffer (for PDF).
+    """
+    def __init__(self, *outputs):
+        self.outputs = outputs
+
+    def write(self, message):
+        for output in self.outputs:
+            output.write(message)
+            output.flush()
+
+    def flush(self):
+        for output in self.outputs:
+            output.flush()
+
+# Capture console output in a buffer
+console_output_buffer = io.StringIO()
+original_stdout = sys.stdout
+# Redirect prints to both console & buffer
+sys.stdout = MultiLogger(original_stdout, console_output_buffer)
+# -------------------------------------------------------
+
 detailed_result = True
 tracePlayerGenerated = True
 
@@ -38,7 +62,6 @@ def load_arguments():
     ap = argparse.ArgumentParser()
     ap.add_argument("-a", "--appName", required=True, help="App name")
     ap.add_argument("-b", "--bugId", required=True, help="Bug ID")
-    # New argument for the unzipped folder path (which should contain the bugId subfolder)
     ap.add_argument("--unzip-dir", required=True, help="Path to the unzipped folder (contains bugId subfolder)")
     args = vars(ap.parse_args())
     return args
@@ -54,7 +77,6 @@ def crop_image(args, trigger, i):
             imageA = cv2.imread(imageName)
 
         imageA = imgUtil.crop_bottom_notification(imageA)
-
     except Exception:
         print(args["first"] + " Image file not found")
         return None, None
@@ -68,7 +90,6 @@ def crop_image(args, trigger, i):
             imageB = cv2.imread(imageName)
 
         imageB = imgUtil.crop_bottom_notification(imageB)
-
     except Exception:
         print(args["second"] + " Image file not found")
         return None, None
@@ -130,8 +151,6 @@ def find_xml_from_screenshot(imagename, stepNum, args):
     else:
         xmlName = imagename.split("screen")[0]
         xmlName += "ui-dump.xml"
-
-    # Update: store XMLs inside a subfolder "xmls" under the bugId folder within unzip_dir
     return os.path.join(args["unzip_dir"], args["bugId"], "xmls", xmlName)
 
 def get_image_names(args, imageName, image_num):
@@ -166,32 +185,35 @@ def get_image_before(args, key):
     return before_image_path
 
 def main():
+    # ----------------------- MAIN LOGIC -----------------------
     args = load_arguments()
     bugId = args["bugId"]
     unzip_dir = args["unzip_dir"]
 
-    # Read JSON from the unzip folder (i.e. from: unzip_dir/bugId/Execution-<bugId>.json)
+    # Read JSON
     json_path = os.path.join(unzip_dir, bugId, f"Execution-{bugId}.json")
     data = read_json(json_path)
-    app_name = args["appName"]
 
     # We'll store results in a list to write them to a PDF afterward
     back_click_results = []
 
-    # Look for device dimensions and steps
     dim = None
+    listOfSteps = None
     for line in data:
         if "deviceDimensions" in line:
             dim = data["deviceDimensions"]
         if "steps" in line:
             listOfSteps = data["steps"]
-            print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    ORACLE FOR BACK BUTTON    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-            triggerScreens = findTrigger(app_name, listOfSteps, dim)
+            print("ORACLE FOR BACK BUTTON")
+            triggerScreens = findTrigger(args["appName"], listOfSteps, dim)
             print("Back was clicked {} time(s)".format(len(triggerScreens)))
+
+    if not listOfSteps:
+        print("No steps found in JSON.")
+        sys.exit(0)
 
     print("-------------------------------------------------------------------------------------------")
 
-    # Evaluate each trigger (back tap)
     for i, trigger in triggerScreens.items():
         get_image_names(args, trigger, i)
         try:
@@ -208,7 +230,6 @@ def main():
 
         # Check text mismatch if SSIM > 0.8
         if ssim_val > 0.8:
-            # Update: pass the full image paths instead of splitting strings.
             before_text = imgUtil.read_text_on_screen(args["first"])
             after_text = imgUtil.read_text_on_screen(args["second"])
             diff = set(before_text) - set(after_text)
@@ -221,108 +242,194 @@ def main():
         print_result(ssim_val, missing_frac)
 
         # Determine pass/fail (for PDF)
-        passed = (ssim_val > 0.8 and missing_frac <= 0.5)
+        passed = (ssim_val > 0.8 and (missing_frac == "" or missing_frac <= 0.5))
+
         back_click_results.append({
             "trigger_step": i,
             "ssim_val": round(ssim_val, 3),
-            "missing_frac": round(missing_frac, 2) if missing_frac != "" else None,
-            "passed": passed
+            "missing_frac": (
+                round(missing_frac, 2)
+                if isinstance(missing_frac, float)
+                else None
+            ),
+            "passed": passed,
+            # Store the actual image paths so we can draw them later
+            "before_image": args["first"],
+            "after_image": args["second"]
         })
 
         print("-------------------------------------------------------------------------------------------")
 
-    # Generate PDF report into the bug folder under unzip_dir
+    # Now restore stdout and create PDF with console logs + images
+    sys.stdout = original_stdout
+    console_output = console_output_buffer.getvalue()
+
     pdf_path = os.path.join(unzip_dir, bugId, "back_button_report.pdf")
-    generate_pdf_report(back_click_results, pdf_path)
+    generate_pdf_report(back_click_results, pdf_path, console_output)
+    print(f"[INFO] PDF report generated at: {pdf_path}")
 
 # --------------------------------------------------------------------------------
 # PDF Generation
 # --------------------------------------------------------------------------------
-def generate_pdf_report(back_click_results, pdf_path):
+def draw_wrapped_text(canvas, text, x, y, max_width, font='Helvetica', font_size=10, line_height=12):
     """
-    Create a PDF summarizing each back button test:
-      - Trigger Step
-      - SSIM
-      - Text mismatch
-      - Pass/Fail
-      - Brief summary at the top (total tests, passed, failed)
+    Utility to wrap text so it doesn't go off the page.
+    Returns the updated y-coordinate.
+    """
+    from reportlab.pdfbase.pdfmetrics import stringWidth
+
+    canvas.setFont(font, font_size)
+    words = text.split()
+    current_line = ""
+
+    for w in words:
+        candidate = (current_line + " " + w).strip() if current_line else w
+        width_of_candidate = stringWidth(candidate, font, font_size)
+        if width_of_candidate <= max_width:
+            current_line = candidate
+        else:
+            canvas.drawString(x, y, current_line)
+            y -= line_height
+            current_line = w
+
+    if current_line:
+        canvas.drawString(x, y, current_line)
+        y -= line_height
+
+    return y
+
+def generate_pdf_report(back_click_results, pdf_path, console_output):
+    """
+    1) First page: Entire console output (wrapped).
+    2) Second page: summary table of back-click tests.
+    3) Then add the images (before/after) for each test at the end.
     """
     from reportlab.lib.pagesizes import A4
-    from reportlab.platypus import Table, TableStyle
-    from reportlab.lib import colors
-    from reportlab.pdfgen import canvas
-
     c = canvas.Canvas(pdf_path, pagesize=A4)
-    width, height = A4
+    page_width, page_height = A4
 
-    x_margin = 50
+    x_margin = 25
     y_margin = 50
-    y_position = height - y_margin
+    y_position = page_height - y_margin
+    line_height = 12
 
-    # Title
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(x_margin, y_position, "Back Button Behavior Report")
-    y_position -= 40
+    # --------------- Page 1: Console Logs ---------------
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(x_margin, y_position, "Back Button - Console Logs")
+    y_position -= 20
 
-    # If no results, show simple message
+    max_text_width = page_width - 2 * x_margin
+
+    for line in console_output.split("\n"):
+        y_position = draw_wrapped_text(
+            c, line, x_margin, y_position,
+            max_width=max_text_width,
+            font='Helvetica', font_size=10,
+            line_height=line_height
+        )
+        if y_position < 60:
+            c.showPage()
+            c.setFont("Helvetica", 10)
+            y_position = page_height - y_margin
+
+    # --------------- Page 2: Summary Table ---------------
+    c.showPage()
+    y_position = page_height - y_margin
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(x_margin, y_position, "Back Button - Summary Table")
+    y_position -= 30
+
     if not back_click_results:
         c.setFont("Helvetica", 12)
         c.drawString(x_margin, y_position, "No back button triggers found.")
         c.save()
-        print(f"[INFO] PDF report generated at: {pdf_path}")
         return
 
-    # ------------------ ADDING A BRIEF SUMMARY ------------------
     total_tests = len(back_click_results)
     passed_tests = sum(1 for r in back_click_results if r["passed"])
     failed_tests = total_tests - passed_tests
 
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(x_margin, y_position, "Summary:")
+    c.drawString(x_margin, y_position, f"Total: {total_tests},  Passed: {passed_tests},  Failed: {failed_tests}")
     y_position -= 20
 
-    c.setFont("Helvetica", 10)
-    c.drawString(x_margin, y_position, f"Total Back-Button Triggers: {total_tests}")
-    y_position -= 15
-    c.drawString(x_margin, y_position, f"Passed: {passed_tests}")
-    y_position -= 15
-    c.drawString(x_margin, y_position, f"Failed: {failed_tests}")
-    y_position -= 10
-    # -----------------------------------------------------------
+    from reportlab.platypus import Table, TableStyle
+    from reportlab.lib import colors
 
-    # Build Table Data
-    table_data = [["Trigger Step", "SSIM", "Text Mismatch", "Result"]]
-    for result in back_click_results:
+    table_data = [["Trigger Step", "SSIM", "Text Mismatch (%)", "Result"]]
+    for r in back_click_results:
+        mismatch_str = f"{r['missing_frac']*100}%" if r["missing_frac"] is not None else "N/A"
         row = [
-            result["trigger_step"],
-            str(result["ssim_val"]),
-            f"{result['missing_frac']*100}%" if result["missing_frac"] is not None else "N/A",
-            "PASSED" if result["passed"] else "FAILED"
+            r["trigger_step"],
+            str(r["ssim_val"]),
+            mismatch_str,
+            "PASSED" if r["passed"] else "FAILED"
         ]
         table_data.append(row)
 
-    # Create a Table
-    table = Table(table_data, colWidths=[122, 122, 122, 122])
-    table.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
-                ("GRID", (0, 0), (-1, -1), 1, colors.black),
-            ]
-        )
-    )
+    summary_table = Table(table_data, colWidths=[110, 80, 110, 80])
+    summary_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
+        ("GRID", (0, 0), (-1, -1), 1, colors.black),
+    ]))
 
-    # Wrap and draw table
-    table.wrapOn(c, width, height)
-    table_height = 20 * (len(table_data) + 1)
-    table.drawOn(c, x_margin, y_position - table_height)
+    # wrap & draw
+    tw, th = summary_table.wrap(0, 0)
+    summary_table.drawOn(c, x_margin, y_position - th)
+    y_position -= (th + 30)
+
+    # --------------- Pages 3+ : Before/After Images ---------------
+    for r in back_click_results:
+        before_path = r["before_image"]
+        after_path = r["after_image"]
+
+        # If not enough space for next images on this page, start a new one
+        if y_position - 250 < 50:
+            c.showPage()
+            y_position = page_height - y_margin
+
+        # Label
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(x_margin, y_position, f"Trigger Step: {r['trigger_step']}")
+        y_position -= 15
+
+        # Show "Before" image
+        if before_path and os.path.exists(before_path):
+            c.setFont("Helvetica", 10)
+            c.drawString(x_margin, y_position, "Before:")
+            y_position -= 15
+            c.drawImage(before_path, x_margin, y_position - 200, width=200, height=200, preserveAspectRatio=True)
+        else:
+            c.setFont("Helvetica", 10)
+            c.drawString(x_margin, y_position, "(Before image not found)")
+        y_position -= 220
+
+        # Show "After" image
+        if after_path and os.path.exists(after_path):
+            c.setFont("Helvetica", 10)
+            c.drawString(x_margin, y_position, "After:")
+            y_position -= 15
+            c.drawImage(after_path, x_margin, y_position - 200, width=200, height=200, preserveAspectRatio=True)
+            y_position -= 220
+        else:
+            c.setFont("Helvetica", 10)
+            c.drawString(x_margin, y_position, "(After image not found)")
+            y_position -= 20
+
+        # Extra spacing between pairs
+        y_position -= 30
+
+        # If near bottom of page, new page
+        if y_position < 100:
+            c.showPage()
+            y_position = page_height - y_margin
 
     c.save()
-    print(f"[INFO] PDF report generated at: {pdf_path}")
 
+# ------------------ Entry Point ------------------
 if __name__ == "__main__":
     main()

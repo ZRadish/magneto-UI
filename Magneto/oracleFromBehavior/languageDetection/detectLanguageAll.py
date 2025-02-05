@@ -6,12 +6,14 @@ import pytesseract
 from langdetect import detect_langs
 from polyglot.detect import Detector
 from pprint import pprint
+
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import Table, TableStyle
 from reportlab.lib import colors
 from reportlab.pdfgen import canvas
 
-# Use current working directory and add parent directory to sys.path
+import io
+
 scriptLocation = os.getcwd()
 dirName = os.path.dirname(scriptLocation)
 sys.path.insert(1, dirName)
@@ -21,23 +23,45 @@ import imageUtilities as imgUtil
 
 detailed_result = True
 
+# ------------------ DUO LOGGING SETUP ------------------
+class MultiLogger:
+    """
+    Sends all 'print' output to both the real console and an in-memory buffer (for PDF).
+    """
+    def __init__(self, *outputs):
+        self.outputs = outputs
+
+    def write(self, message):
+        for output in self.outputs:
+            output.write(message)
+            output.flush()
+
+    def flush(self):
+        for output in self.outputs:
+            output.flush()
+
+# Capture console output in a buffer
+console_output_buffer = io.StringIO()
+original_stdout = sys.stdout
+# Redirect prints to both console & buffer
+sys.stdout = MultiLogger(original_stdout, console_output_buffer)
+# -------------------------------------------------------
+
 def load_arguments():
     """Construct the argument parser and parse the arguments."""
     ap = argparse.ArgumentParser()
     ap.add_argument("-a", "--appName", required=True, help="App name")
     ap.add_argument("-b", "--bugId", required=True, help="Bug ID")
-    # New argument for the unzipped folder path (which should contain the bugId subfolder)
     ap.add_argument("--unzip-dir", required=True, help="Path to the unzipped folder (contains bugId subfolder)")
     args = vars(ap.parse_args())
     return args
 
-def read_json(jsonName):
-    with open(jsonName) as f:
-        data = json.load(f)
-    return data
+def read_json(json_path):
+    with open(json_path) as f:
+        return json.load(f)
 
 def was_language_set(dynGuiComponentData):
-    # Checks if the current window indicates language selection
+    """Checks if the current window indicates language selection."""
     if (
         "language" in dynGuiComponentData["currentWindow"].lower()
         and "language" in dynGuiComponentData["titleWindow"].lower()
@@ -48,8 +72,8 @@ def was_language_set(dynGuiComponentData):
 
 def find_trigger(app_name, listOfSteps):
     """
-    input: steps list from execution.json  
-    output: dict of { 'English': [screen1, screen2, ...], 'Spanish': [...], ... }
+    Input: steps list from execution.json
+    Output: dict of { 'English': [screen1, screen2, ...], 'Spanish': [...], ... }
     """
     selection = {}
     language_selected = None
@@ -95,6 +119,7 @@ def display_result(val, result_map, selected_lang, total, trigger):
         )
     else:
         print("Test passed : All displayed text is in user selected language")
+
     if detailed_result:
         print("===================================== DETAILED RESULT =====================================")
         print("Text : detected language")
@@ -107,12 +132,12 @@ def display_result(val, result_map, selected_lang, total, trigger):
             selected_lang,
             "language",
         )
-    print(
-        "The test result is based on ratio of un-translated sentences to all language identified sentences. The threshold for good conversion is 70%"
-    )
-    print(
-        "'Detector is not able to detect the language reliably.' message is shown if the text to be translated was too small for reliable translation."
-    )
+        print(
+            "The test result is based on ratio of un-translated sentences to all language identified sentences. The threshold for good conversion is 70%"
+        )
+        print(
+            "'Detector is not able to detect the language reliably.' message is shown if the text to be translated was too small for reliable translation."
+        )
 
 def detect_language(txt, selected_lang, lang_data):
     """
@@ -122,16 +147,18 @@ def detect_language(txt, selected_lang, lang_data):
       result_map: {line: detected_language} for lines not matching
       total_count: how many lines we attempted to detect
     """
+    from polyglot.detect import Detector
     result_map = {}
     total_count = len(txt)
     for line in txt:
         try:
             # Use Polyglot to detect possible languages
-            for language in Detector(line, quiet=True).languages:
+            detector = Detector(line, quiet=True)
+            for language in detector.languages:
                 name = language.name
                 code = language.code
-                language_info = lang_data.get(code, {})
                 confidence = language.confidence
+                language_info = lang_data.get(code, {})
 
                 # Combine name and nativeName
                 all_names = []
@@ -140,13 +167,15 @@ def detect_language(txt, selected_lang, lang_data):
                 if "nativeName" in language_info:
                     all_names += language_info["nativeName"].split(",")
 
-                all_names = [n.strip() for n in all_names]
+                # Cleanup trailing spaces
+                all_names = [n.strip() for n in all_names if n.strip()]
 
                 # If the selected language isn't in the possible names,
-                # and confidence is >=70, treat it as a mismatch
+                # and confidence is >= 70, treat it as a mismatch
                 if selected_lang not in all_names and float(confidence) >= 70:
                     result_map[line] = name
         except Exception:
+            # If detection fails, skip
             continue
 
     return (result_map, total_count)
@@ -156,50 +185,56 @@ def main():
     bugId = args["bugId"]
     unzip_dir = args["unzip_dir"]
 
-    # Read the JSON from the unzipped folder (it should be in the bugId subfolder)
+    # Read the main JSON that has the steps
     json_path = os.path.join(unzip_dir, bugId, f"Execution-{bugId}.json")
     data = read_json(json_path)
-    lang_data = read_json("language_code.json")  # Contains code -> {name, nativeName}
 
-    app_name = args["appName"]
-    print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ORACLE FOR LANGUAGE CHANGE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+    # Read the language code JSON (assumes it is in the same folder or use an absolute path)
+    lang_data = read_json("language_code.json")
+
+    print("ORACLE FOR LANGUAGE CHANGE")
     triggerScreens = {}
+    listOfSteps = None
+
+    # Parse 'deviceDimensions' or 'steps' from the JSON
     for line in data:
         if "steps" in line:
             listOfSteps = data["steps"]
-            triggerScreens = find_trigger(app_name, listOfSteps)
+            triggerScreens = find_trigger(args["appName"], listOfSteps)
     if len(triggerScreens) > 0:
         print("Language was set {} time(s)".format(len(triggerScreens)))
     else:
         print("=== No language change detected ===")
 
-    print("-------------------------------------------------------------------------------------------")
-
-    # We'll collect PDF data in a single structure:
+    # We'll collect results for each language in a structured form
     pdf_summary = {
         "lang_changes": []
     }
 
     # For each language found, gather the screens and check them
     for selection, triggers in triggerScreens.items():
-        lang_result = { "selected_lang": selection, "results": [] }
+        lang_result = {
+            "selected_lang": selection,
+            "results": []  # each item: { 'screen': str, 'bad_percentage': float, 'num_lines': int, 'num_mismatched': int }
+        }
 
         print("===========================================================================================")
-        print("-------------------------------------------------------------------------------------------")
         print("Result for", selection, "language selection")
 
         for trigger in triggers:
-            # Build full image path using unzip_dir, bugId, and trigger
-            # image_path = os.path.join(unzip_dir, bugId, trigger)
-            text_on_screen = imgUtil.read_text_on_screen(bugId, trigger)
+            # We'll store the actual screenshot path to embed in the PDF
+            screenshot_file = f"{trigger}.png"  # or some known naming pattern
+            full_path = os.path.join(unzip_dir, bugId, screenshot_file)
+            screenshot_path = os.path.join(unzip_dir, bugId)
+            text_on_screen = imgUtil.read_text_on_screen(screenshot_path, trigger)
             if not text_on_screen:
-                print("Test passed : No text found in image")
-                # Even if no text, store something in PDF results
+                print("Test passed : No text found in image", trigger)
                 lang_result["results"].append({
                     "screen": trigger,
-                    "bad_percentage": 0.0,
-                    "num_lines": 0,
-                    "num_mismatched": 0
+                    "screenshot": full_path,  # store the actual image path here
+                    "bad_percentage": bad_percentage,
+                    "num_lines": total_lines_detected,
+                    "num_mismatched": len(result_map),
                 })
                 continue
 
@@ -210,110 +245,199 @@ def main():
             display_result(bad_percentage, result_map, selection, total_lines_detected, trigger)
             print("-------------------------------------------------------------------------------------------")
 
-            # Store results for PDF
             lang_result["results"].append({
                 "screen": trigger,
                 "bad_percentage": bad_percentage,
                 "num_lines": total_lines_detected,
-                "num_mismatched": len(result_map)
+                "num_mismatched": len(result_map),
+                "screenshot": full_path 
             })
 
         pdf_summary["lang_changes"].append(lang_result)
 
-    # Generate the PDF report into the bugId subfolder under the unzip directory
-    pdf_path = os.path.join(unzip_dir, bugId, "language_detection_report.pdf")
-    generate_pdf_report(pdf_summary, pdf_path)
+    # Restore stdout and build the PDF with logs + images
+    sys.stdout = original_stdout
+    console_output = console_output_buffer.getvalue()
 
-def generate_pdf_report(summary, pdf_path):
+    pdf_path = os.path.join(unzip_dir, bugId, "language_detection_report.pdf")
+    generate_pdf_report(pdf_summary, pdf_path, console_output)
+    print(f"[INFO] PDF generated at: {pdf_path}")
+
+
+# ----------------------------------------------------------------
+# HELPER FUNCTION FOR WRAPPING TEXT (console logs) IN THE PDF
+# ----------------------------------------------------------------
+def draw_wrapped_text(canvas, text, x, y, max_width, font='Helvetica', font_size=10, line_height=12):
     """
-    Create a single-page PDF summarizing language checks.
-    The page height grows if needed.
+    Draw 'text' at (x,y), wrapping automatically if the line exceeds 'max_width'.
+    Returns the new 'y' position after drawing.
+    """
+    from reportlab.pdfbase.pdfmetrics import stringWidth
+
+    canvas.setFont(font, font_size)
+    words = text.split()
+    current_line = ""
+
+    for w in words:
+        candidate = (current_line + " " + w).strip() if current_line else w
+        width_of_candidate = stringWidth(candidate, font, font_size)
+        if width_of_candidate <= max_width:
+            current_line = candidate
+        else:
+            canvas.drawString(x, y, current_line)
+            y -= line_height
+            current_line = w
+
+    if current_line:
+        canvas.drawString(x, y, current_line)
+        y -= line_height
+
+    return y
+
+
+# ----------------------------------------------------------------
+# PDF GENERATION (CONSOLE LOGS first, then summary table, then images)
+# ----------------------------------------------------------------
+def generate_pdf_report(summary, pdf_path, console_output):
+    """
+    1) Page 1: Entire console logs (wrapped).
+    2) Page 2: Summary table for language checks.
+    3) Pages after that: each screenshot is displayed at 200x200, labeled with the language and screen name.
     """
     from reportlab.lib.pagesizes import A4
     from reportlab.platypus import Table, TableStyle
     from reportlab.lib import colors
     from reportlab.pdfgen import canvas
 
-    # 1) Basic margin & spacing setup
-    top_margin = 40
-    left_margin = 17
-    line_gap_title = 30
-    line_gap_subtitle = 20
-    spacer_between_items = 30
+    c = canvas.Canvas(pdf_path, pagesize=A4)
+    page_width, page_height = A4
 
-    # Calculate total height needed
-    total_height = top_margin
-    total_height += line_gap_title  # Title
-    total_lang_changes = len(summary["lang_changes"])
-    total_screens = sum(len(lang_change["results"]) for lang_change in summary["lang_changes"])
-    summary_lines = 3  
-    total_height += summary_lines * 15
+    x_margin = 25
+    y_margin = 50
+    y_position = page_height - y_margin
+    line_height = 12
 
-    for lang_change in summary["lang_changes"]:
-        total_height += line_gap_subtitle
-        num_screens = len(lang_change["results"])
-        total_height += 20 * (num_screens + 1)
-        total_height += spacer_between_items
+    # -------------------- Page 1: Console Logs --------------------
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(x_margin, y_position, "Language Detection - Console Logs")
+    y_position -= 20
 
-    a4_width, a4_height = A4
-    final_page_height = max(a4_height, total_height)
+    max_text_width = page_width - 2 * x_margin
 
-    # 2) Create the canvas
-    c = canvas.Canvas(pdf_path, pagesize=(a4_width, final_page_height))
-    y_position = final_page_height - top_margin
+    for line in console_output.split("\n"):
+        y_position = draw_wrapped_text(
+            c, line, x_margin, y_position,
+            max_width=max_text_width,
+            font='Helvetica', font_size=10,
+            line_height=line_height
+        )
+        if y_position < 60:  # If near bottom, new page
+            c.showPage()
+            c.setFont("Helvetica", 10)
+            y_position = page_height - y_margin
 
-    # 3) Draw the Title
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(left_margin, y_position, "Language Detection Report")
-    y_position -= line_gap_title
+    # -------------------- Page 2: Summary Table(s) --------------------
+    c.showPage()
+    y_position = page_height - y_margin
 
-    # Draw Summary
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(x_margin, y_position, "Language Detection - Summary")
+    y_position -= 30
+
+    # If no language changes, just note that
+    if not summary["lang_changes"]:
+        c.setFont("Helvetica", 12)
+        c.drawString(x_margin, y_position, "No language changes detected.")
+        c.save()
+        return
+
+    # Count total screens
+    total_screens = sum(len(lc["results"]) for lc in summary["lang_changes"])
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(left_margin, y_position, "Summary:")
-    y_position -= 15
-    c.setFont("Helvetica", 10)
-    c.drawString(left_margin, y_position, f"Total Language Selections: {total_lang_changes}")
-    y_position -= 15
-    c.drawString(left_margin, y_position, f"Total Screens Analyzed: {total_screens}")
-    y_position -= 15
-    y_position -= line_gap_subtitle
+    c.drawString(x_margin, y_position, f"Total language selections: {len(summary['lang_changes'])}, total screens: {total_screens}")
+    y_position -= 20
 
-    # 4) For each language selection, draw a sub-title and a table
     for lang_change in summary["lang_changes"]:
         selected_lang = lang_change["selected_lang"]
         results = lang_change["results"]
 
         c.setFont("Helvetica-Bold", 12)
-        c.drawString(left_margin, y_position, f"Results for '{selected_lang}' language selection:")
-        y_position -= line_gap_subtitle
+        c.drawString(x_margin, y_position, f"Language: {selected_lang}")
+        y_position -= 20
 
-        table_data = [["Screen", "Total Lines", "Mismatched", "Bad %"]]
+        table_data = [["Screen", "Total Lines", "Mismatch", "Bad %"]]
         for r in results:
-            scr = r["screen"]
-            lines_total = r["num_lines"]
-            lines_mismatch = r["num_mismatched"]
-            bad_percentage = round(r["bad_percentage"] * 100, 2)
-            table_data.append([scr, str(lines_total), str(lines_mismatch), f"{bad_percentage}%"])
-
-        col_widths = [180, 80, 80, 80]
-        table = Table(table_data, colWidths=col_widths)
-        table.setStyle(
-            TableStyle([
-                ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("GRID", (0, 0), (-1, -1), 1, colors.black),
-                ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
+            bad_pct = round(r["bad_percentage"] * 100, 2)
+            mismatch_count = r["num_mismatched"]
+            lines_count = r["num_lines"]
+            table_data.append([
+                r["screen"],
+                str(lines_count),
+                str(mismatch_count),
+                f"{bad_pct}%"
             ])
-        )
 
-        tw, th = table.wrap(a4_width, final_page_height)
-        table.drawOn(c, left_margin, y_position - th)
-        y_position -= (th + spacer_between_items)
+        summary_table = Table(table_data, colWidths=[350, 80, 80, 80])
+        summary_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
+            ("GRID", (0, 0), (-1, -1), 1, colors.black),
+        ]))
 
+        # Wrap and draw
+        tw, th = summary_table.wrap(0, 0)
+        summary_table.drawOn(c, x_margin, y_position - th)
+        y_position -= (th + 30)
+
+        # If near bottom, next page
+        if y_position < 100:
+            c.showPage()
+            y_position = page_height - y_margin
+
+    # -------------------- Pages 3+: Screenshots --------------------
+    for lang_change in summary["lang_changes"]:
+        selected_lang = lang_change["selected_lang"]
+        for r in lang_change["results"]:
+            screen_name = r["screen"]
+            screenshot_path = r["screenshot"]
+
+            # Check if we have enough space
+            if y_position - 220 < 50:  # about 200 for the image + margin
+                c.showPage()
+                y_position = page_height - y_margin
+
+            # Label
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(x_margin, y_position, f"Language: {selected_lang}, Screen: {screen_name}")
+            y_position -= 15
+
+            # Draw the image if it exists
+            if os.path.exists(screenshot_path):
+                c.drawImage(
+                    screenshot_path,
+                    x_margin,
+                    y_position - 200,
+                    width=200,
+                    height=200,
+                    preserveAspectRatio=True
+                )
+                y_position -= (200 + 30)
+            else:
+                c.setFont("Helvetica", 10)
+                c.drawString(x_margin, y_position, f"(Screenshot not found: {screenshot_path})")
+                y_position -= 30
+
+            # If near bottom, next page
+            if y_position < 100:
+                c.showPage()
+                y_position = page_height - y_margin
+
+    # Finalize
     c.save()
-    print(f"PDF generated at: {pdf_path}")
 
+# ------------------ Entry Point ------------------
 if __name__ == "__main__":
     main()
