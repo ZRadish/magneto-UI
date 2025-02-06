@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import AdmZip from 'adm-zip';
 import path from 'path';
+import Test from '../models/testModel.js'; 
 
 
 // Load environment variables from the .env file
@@ -24,55 +25,62 @@ conn.once('open', () => {
 
 
 export const saveFileInfo = async (file, testId) => {
-  const filePath = file.path; // Temporary file path
+  const filePath = file.path;
   const originalName = file.originalname;
 
-  // Step 1: Unzip the file to a temporary directory
-  const unzipDir = path.join('/app/temp', 'unzipped', testId); // Use testId for uniqueness
+  // Ensure the unzip directory exists
+  const unzipDir = path.join('/app/temp', 'unzipped', testId);
   if (!fs.existsSync(unzipDir)) {
     fs.mkdirSync(unzipDir, { recursive: true });
   }
-  const files = fs.readdirSync(unzipDir);
-  console.log(files);
 
+  // Unzip the file
   const zip = new AdmZip(filePath);
   zip.extractAllTo(unzipDir, true);
-
   console.log(`File unzipped to: ${unzipDir}`);
 
-  // Step 2: Stream the file into GridFS
+  // Stream file into GridFS
   const readStream = fs.createReadStream(filePath);
   const uploadStream = gfsBucket.openUploadStream(originalName, {
-    metadata: {
-      testId: new mongoose.Types.ObjectId(testId), // Store testId as an ObjectId
-    },
+    metadata: { testId: new mongoose.Types.ObjectId(testId) },
   });
 
   return new Promise((resolve, reject) => {
     readStream
       .pipe(uploadStream)
       .on('finish', async () => {
-        // File successfully uploaded to GridFS
         const fileInfo = {
           id: uploadStream.id,
           fileName: uploadStream.filename,
           fileType: file.mimetype,
           uploadDate: new Date(),
-          unzipPath: unzipDir, // Add the path to the unzipped files
-          metadata: {
-            testId: new mongoose.Types.ObjectId(testId),
-          },
+          unzipPath: unzipDir,
+          metadata: { testId: new mongoose.Types.ObjectId(testId) },
         };
 
-        // Clean up the temporary file
+        // Remove temporary file
         fs.unlinkSync(filePath);
 
-        // Return file metadata
+        try {
+          // Update the corresponding test with the uploaded file ID
+          const updatedTest = await Test.findByIdAndUpdate(
+            testId,
+            { $set: { fileId: uploadStream.id } },
+            { new: true }
+          );
+
+          if (!updatedTest) {
+            console.error(`Test with ID ${testId} not found to update fileId`);
+          } else {
+            console.log(`Updated Test ${testId} with fileId: ${uploadStream.id}`);
+          }
+        } catch (error) {
+          console.error('Error updating test with fileId:', error.message);
+        }
+
         resolve(fileInfo);
       })
-      .on('error', (err) => {
-        reject(err);
-      });
+      .on('error', (err) => reject(err));
   });
 };
 
