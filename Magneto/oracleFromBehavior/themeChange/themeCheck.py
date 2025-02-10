@@ -332,7 +332,7 @@ def main():
         sys.stdout = original_stdout
         console_output = console_output_buffer.getvalue()
         pdf_path = os.path.join(unzip_dir, bugId, "theme_detection_report.pdf")
-        generate_pdf_report(pdf_summary, pdf_path, console_output)
+        generate_pdf_report(unzip_dir, pdf_summary, pdf_path, console_output)
         print(f"[INFO] PDF generated at: {pdf_path}")
         return
 
@@ -390,7 +390,7 @@ def main():
     console_output = console_output_buffer.getvalue()
 
     pdf_path = os.path.join(unzip_dir, bugId, "theme_detection_report.pdf")
-    generate_pdf_report(pdf_summary, pdf_path, console_output)
+    generate_pdf_report(unzip_dir, pdf_summary, pdf_path, console_output)
     print(f"\n[INFO] PDF generated at: {pdf_path}")
 
 
@@ -428,7 +428,7 @@ def draw_wrapped_text(canvas, text, x, y, max_width, font='Helvetica', font_size
 # ----------------------------------------------------------------
 # PDF GENERATION FUNCTION (WRAPPED TEXT + CENTERED TABLES + IMAGES)
 # ----------------------------------------------------------------
-def generate_pdf_report(summary, pdf_path, console_output):
+def generate_pdf_report(unzip_dir, summary, pdf_path, console_output):
     """
     1) Include the *entire console output* at the top of the PDF (wrapped).
     2) New page: summary + tables (Delta_E, text visibility) centered.
@@ -554,7 +554,7 @@ def generate_pdf_report(summary, pdf_path, console_output):
 
         for f in failed_pages:
             img_name = f["screen"]  # e.g. "screen_3.png" or similar
-            img_path = os.path.join(bugId, img_name)
+            img_path = os.path.join(unzip_dir, bugId, img_name)
             if os.path.exists(img_path):
                 # Reserve space for a 250x250 image
                 # Check if we need a new page

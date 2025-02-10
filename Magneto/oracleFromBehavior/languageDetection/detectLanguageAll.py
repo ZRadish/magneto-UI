@@ -3,7 +3,6 @@ import argparse
 import cv2
 import numpy as np
 import pytesseract
-from langdetect import detect_langs
 from polyglot.detect import Detector
 from pprint import pprint
 
@@ -223,7 +222,7 @@ def main():
 
         for trigger in triggers:
             # We'll store the actual screenshot path to embed in the PDF
-            screenshot_file = f"{trigger}.png"  # or some known naming pattern
+            screenshot_file = f"{trigger}"  # or some known naming pattern
             full_path = os.path.join(unzip_dir, bugId, screenshot_file)
             screenshot_path = os.path.join(unzip_dir, bugId)
             text_on_screen = imgUtil.read_text_on_screen(screenshot_path, trigger)
@@ -377,7 +376,7 @@ def generate_pdf_report(summary, pdf_path, console_output):
                 f"{bad_pct}%"
             ])
 
-        summary_table = Table(table_data, colWidths=[350, 80, 80, 80])
+        summary_table = Table(table_data, colWidths=[350, 70, 70, 70])
         summary_table.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
@@ -404,18 +403,28 @@ def generate_pdf_report(summary, pdf_path, console_output):
             screen_name = r["screen"]
             screenshot_path = r["screenshot"]
 
+            # Print the selected language and screen name
+            print(f"Processing Language: {selected_lang}, Screen: {screen_name}")
+
             # Check if we have enough space
             if y_position - 220 < 50:  # about 200 for the image + margin
                 c.showPage()
                 y_position = page_height - y_margin
 
             # Label
-            c.setFont("Helvetica-Bold", 12)
-            c.drawString(x_margin, y_position, f"Language: {selected_lang}, Screen: {screen_name}")
-            y_position -= 15
+            label_text = f"Language: {selected_lang}, Screen: {screen_name}"
+            y_position = draw_wrapped_text(
+                c, label_text,
+                x_margin, y_position,
+                max_width=(page_width - 2*x_margin),
+                font='Helvetica-Bold', font_size=12,
+                line_height=line_height
+            )
+            y_position -= 5
 
             # Draw the image if it exists
             if os.path.exists(screenshot_path):
+                print(f"✅ Found Screenshot: {screenshot_path}")
                 c.drawImage(
                     screenshot_path,
                     x_margin,
@@ -426,17 +435,23 @@ def generate_pdf_report(summary, pdf_path, console_output):
                 )
                 y_position -= (200 + 30)
             else:
-                c.setFont("Helvetica", 10)
-                c.drawString(x_margin, y_position, f"(Screenshot not found: {screenshot_path})")
-                y_position -= 30
+                print(f"❌ Screenshot NOT FOUND: {screenshot_path}")  # PRINT TO TERMINAL
+                not_found_text = f"(Screenshot not found: {screenshot_path})"
+                y_position = draw_wrapped_text(
+                    c, not_found_text,
+                    x_margin, y_position,
+                    max_width=(page_width - 2*x_margin),
+                    font='Helvetica', font_size=10,
+                    line_height=line_height
+                )
 
             # If near bottom, next page
             if y_position < 100:
                 c.showPage()
                 y_position = page_height - y_margin
 
-    # Finalize
     c.save()
+
 
 # ------------------ Entry Point ------------------
 if __name__ == "__main__":
