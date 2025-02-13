@@ -184,6 +184,41 @@ const AppRow: React.FC<{
     }
   };
 
+  const handleDeleteTest = async (testId: string) => {
+    if (window.confirm("Are you sure you want to delete this test?")) {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        alert("Authentication token not found");
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/test/${testId}`,
+          {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to delete test: ${response.status}`);
+        }
+
+        // Remove the deleted test from the local state
+        setTests((prevTests) =>
+          prevTests.filter((test) => test._id !== testId)
+        );
+      } catch (error) {
+        console.error("Error deleting test:", error);
+        alert("Failed to delete the test. Please try again.");
+      }
+    }
+  };
+
   return (
     <div className="border border-violet-900 rounded-xl p-2 mb-6 hover:border-violet-700 transition-colors hover:shadow-lg hover:shadow-violet-900/50">
       <div
@@ -325,6 +360,16 @@ const AppRow: React.FC<{
                           )}
                         </div>
                       </td>
+                      <td className="p-3">
+                        <button
+                          className="text-red-500 hover:text-red-400 transition-colors p-1 rounded-full"
+                          onClick={() => handleDeleteTest(test._id)}
+                          title="Delete Test"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>{" "}
+                      {/* Add the delete button here */}
                     </tr>
                   ))}
                 </tbody>
@@ -705,33 +750,40 @@ const Dashboard: React.FC = () => {
               <Plus size={16} />
               <span>New</span>
             </button>
-
-            {apps.map((app) => (
-              <div
-                key={app.id}
-                onClick={() => handleAppSelect(app.id)}
-                className={`relative border border-violet-900 rounded-lg mb-4 cursor-pointer ${
-                  selectedAppId === app.id
-                    ? "bg-violet-900/50"
-                    : "hover:border-violet-700 transition-colors hover:shadow-lg hover:shadow-violet-900/50"
-                }`}
-              >
-                <div className="flex items-center p-4">
-                  <Folder className="mr-2 text-violet-500" size={20} />
-                  <span className="flex-grow text-gray-400">{app.name}</span>
-                  <ChevronRight size={20} className="text-violet-500" />
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleOpenDeleteModal(app.id);
-                  }}
-                  className="absolute top-4 right-4 px-3 py-2 bg-red-600 text-white rounded-full hover:opacity-80 transition-opacity"
+            <div
+              className="bg-gray-800 p-4 rounded-lg max-h-[60vh] overflow-y-auto mb-6"
+              style={{
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+              }}
+            >
+              {apps.map((app) => (
+                <div
+                  key={app.id}
+                  onClick={() => handleAppSelect(app.id)}
+                  className={`relative border border-violet-900 rounded-lg mb-4 cursor-pointer ${
+                    selectedAppId === app.id
+                      ? "bg-violet-900/50"
+                      : "hover:border-violet-700 transition-colors hover:shadow-lg hover:shadow-violet-900/50"
+                  }`}
                 >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))}
+                  <div className="flex items-center p-4">
+                    <Folder className="mr-2 text-violet-500" size={20} />
+                    <span className="flex-grow text-gray-400">{app.name}</span>
+                    <ChevronRight size={20} className="text-violet-500" />
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenDeleteModal(app.id);
+                    }}
+                    className="absolute top-4 right-4 px-3 py-2 bg-red-600 text-white rounded-full hover:opacity-80 transition-opacity"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
           </>
         );
 
