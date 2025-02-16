@@ -499,7 +499,7 @@ def generate_pdf_report(unzip_dir, summary, pdf_path, console_output):
         status = "Yes" if item["consistent"] else "No"
         delta_data.append([screen_name, str(de_val), status])
 
-    delta_table = Table(delta_data, colWidths=[400, 80, 100])  # Adjust col widths as needed
+    delta_table = Table(delta_data, colWidths=[390, 70, 100])  # Adjust col widths as needed
     delta_table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
