@@ -3,8 +3,9 @@ import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import User from '../models/userModel.js';
 import sgMail from '@sendgrid/mail'; // Import SendGrid for email
-import crypto from 'crypto'; // For generating tokens
 import mongoose from 'mongoose';
+import App from '../models/appModel.js';
+import Test from '../models/testModel.js';
 
 
 dotenv.config(); // Load environment variables
@@ -66,12 +67,71 @@ export const registerUserService = async (userData) => {
 
 
 // Delete a user by ID
-export const deleteUserService = async (id) => {
-  try {
-    return await User.deleteOne({ _id: id });
-  } catch (error) {
-    throw new Error(error.message);
-  }
+export const deleteUserService = async (userId) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+        console.log("[DEBUG] Deleting user:", userId);
+
+        // Find all apps owned by the user
+        const apps = await App.find({ userId: userObjectId }).session(session);
+        const appIds = apps.map(app => app._id);
+
+        console.log(`[DEBUG] Found ${apps.length} apps to delete.`);
+
+        // Find all tests associated with these apps
+        const tests = await Test.find({ appId: { $in: appIds } }).session(session);
+        const fileIds = tests
+            .filter(test => test.fileId) // Only keep tests that have an associated file
+            .map(test => new mongoose.Types.ObjectId(test.fileId)); // Convert fileId to ObjectId
+
+        console.log(`[DEBUG] Found ${tests.length} tests to delete.`);
+        console.log(`[DEBUG] Found ${fileIds.length} files to delete.`);
+
+        // Step 1: Delete all tests associated with the user's apps
+        await Test.deleteMany({ appId: { $in: appIds } }).session(session);
+        console.log("[DEBUG] Deleted tests.");
+
+        // Step 2: Delete all apps owned by the user
+        await App.deleteMany({ userId: userObjectId }).session(session);
+        console.log("[DEBUG] Deleted apps.");
+
+        // Step 3: Delete associated files from GridFS (files.files and files.chunks)
+        if (fileIds.length > 0) {
+            try {
+                const db = mongoose.connection.db;
+                console.log("[DEBUG] Deleting files from GridFS...");
+
+                await db.collection('files.files').deleteMany({ _id: { $in: fileIds } });
+                await db.collection('files.chunks').deleteMany({ files_id: { $in: fileIds } });
+
+                console.log(`[DEBUG] Successfully deleted ${fileIds.length} files from GridFS.`);
+            } catch (error) {
+                console.error(`[ERROR] Failed to delete files for user ${userId}: ${error.message}`);
+            }
+        }
+
+        // Step 4: Delete the user from the Users collection
+        const deletedUser = await User.findByIdAndDelete(userObjectId, { session });
+
+        if (!deletedUser) {
+            throw new Error("User not found or could not be deleted.");
+        }
+
+        console.log("[DEBUG] User Delete Result:", deletedUser);
+
+        await session.commitTransaction();
+        session.endSession();
+
+        return { success: true, message: "User and all associated data deleted successfully." };
+    } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+        console.error("[SERVICE] Error in deleteUserService:", error.message);
+        throw new Error(error.message);
+    }
 };
 
 

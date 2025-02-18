@@ -90,7 +90,7 @@ export const getTestsByAppService = async (appId) => {
   };
   
 
-export const deleteTestService = async (testId) => {
+  export const deleteTestService = async (testId) => {
     const session = await mongoose.startSession();
     session.startTransaction();
   
@@ -104,7 +104,7 @@ export const deleteTestService = async (testId) => {
         throw new Error('Test not found');
       }
   
-      const { appId } = test;
+      const { appId, fileId } = test;
   
       // Delete the test from the Tests collection
       await Test.findByIdAndDelete(testObjectId).session(session);
@@ -116,6 +116,21 @@ export const deleteTestService = async (testId) => {
         { new: true, session }
       );
   
+      // If a file is associated with the test, delete it from GridFS
+      if (fileId) {
+        try {
+          const fileObjectId = new mongoose.Types.ObjectId(fileId);
+          
+          // Delete the file from GridFS (files.files and files.chunks)
+          await mongoose.connection.db.collection('files.files').deleteOne({ _id: fileObjectId });
+          await mongoose.connection.db.collection('files.chunks').deleteMany({ files_id: fileObjectId });
+          
+          console.log(`Deleted associated file: ${fileId}`);
+        } catch (error) {
+          console.error(`Error deleting associated file for test ${testId}: ${error.message}`);
+        }
+      }
+  
       await session.commitTransaction();
       session.endSession();
     } catch (error) {
@@ -124,6 +139,7 @@ export const deleteTestService = async (testId) => {
       throw new Error('Failed to delete test: ' + error.message);
     }
   };
+
 
 
 export const updateTestAfterRun = async (testId, { result, status }) => {
