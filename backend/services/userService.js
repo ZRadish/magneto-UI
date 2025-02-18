@@ -154,7 +154,7 @@ const generateVerificationToken = () => {
 const sendEmail = async (to, subject, templateId, dynamicTemplateData) => {
   const msg = {
     to,
-    from: 'dkazzoun@gmail.com',
+    from: 'magnetouiweb@gmail.com',
     templateId, // SendGrid template ID
     dynamicTemplateData, // Dynamic data for the email template
   };
