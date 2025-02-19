@@ -1,5 +1,6 @@
 import User from '../models/userModel.js';
 import * as userService from '../services/userService.js';
+import { deleteUserService } from '../services/userService.js'; 
 import mongoose from 'mongoose';
 
 // LOGIN API: Authenticates user based on email and password
@@ -51,18 +52,21 @@ export const registerUser = async (req, res) => {
 // DELETE USER API: Deletes a user based on their ID
 export const deleteUser = async (req, res) => {
   try {
-    const userId = req.user.id; // Get user ID from the decoded token (set by the middleware)
+      const userId = req.user.id; // Extract userId from authenticated token
+      console.log("[DEBUG] User ID from Token:", userId);
 
-    const result = await userService.deleteUserService(userId);
-    if (result.deletedCount === 1) {
-      return res.status(200).json({ success: true, message: 'User deleted successfully' });
-    }
+      const deletedUser = await deleteUserService(userId);
+      if (!deletedUser) {
+          return res.status(404).json({ success: false, error: "User not found or could not be deleted." });
+      }
 
-    res.status(404).json({ success: false, error: 'User not found or could not be deleted' });
+      res.status(200).json({ success: true, message: "User deleted successfully." });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+      console.error("[CONTROLLER] Error in deleteUser:", error.message);
+      res.status(500).json({ success: false, error: error.message });
   }
 };
+
 
 // GET USER INFO API: Fetches user details by ID
 export const getUserInfo = async (req, res) => {

@@ -6,20 +6,20 @@ import { Lock } from "lucide-react";
 import PasswordStrengthMeter from "../components/PasswordStrength";
 import api from "../utils/api";
 
-const apiUrl = import.meta.env.VITE_API_URL;
+// const apiUrl = import.meta.env.VITE_API_URL;
 
 //make API call to reset password
 const resetPassword = async (userId: string, password: string) => {
   try {
-    const response = await api.post('/user/password/reset', {
+    const response = await api.post("/user/password/reset", {
       userId,
       newPassword: password, // Sending the new password to the backend
     });
 
-    console.log('Password reset response:', response.data);
+    console.log("Password reset response:", response.data);
     return response.data;
   } catch (error) {
-    console.error('Error resetting password:', error);
+    console.error("Error resetting password:", error);
     throw error;
   }
 };
@@ -29,7 +29,7 @@ const ResetPasswordPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const navigate = useNavigate();
   const { state } = useLocation();
-  const [error, setError] = useState("");
+  const [, setError] = useState("");
   const userId = localStorage.getItem("userId"); // Retrieve `UserId` directly as a string
 
   console.log("userId before sending request:", userId);
@@ -45,7 +45,9 @@ const ResetPasswordPage = () => {
     e.preventDefault();
 
     if (!isPasswordStrong) {
-      setError("Password must fulfill all requirements to reset your password.");
+      setError(
+        "Password must fulfill all requirements to reset your password."
+      );
       return;
     }
 
@@ -55,7 +57,9 @@ const ResetPasswordPage = () => {
     }
 
     if (!userId) {
-      setError("User ID not found. Please try the forgot password process again.");
+      setError(
+        "User ID not found. Please try the forgot password process again."
+      );
       return;
     }
 
@@ -131,7 +135,7 @@ const ResetPasswordPage = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="mt-5 w-full py-3 px-4 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200
-              font-bold rounded-lg shadow-lg hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2
+              font-bold rounded-lg shadow-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2
               focus:ring-offset-gray-900 transition duration-200"
               type="submit"
               //disabled={isLoading}

@@ -12,15 +12,14 @@ const LoginPage = () => {
   const isLoading = false;
   const navigate = useNavigate();
 
-  
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     console.log("Name:", email);
     try {
       const response = await api.post("/user/login", { email, password });
-  
+
       console.log("API Response Data:", response.data);
-  
+
       const { user, token } = response.data; // Extract token and user
       if (response.data.error) {
         setError(response.data.error);
@@ -28,7 +27,7 @@ const LoginPage = () => {
         localStorage.setItem("authToken", token); // Store token
         localStorage.setItem("UserId", user.id); // Store user ID (optional)
         localStorage.setItem("username", user.firstName); // Store username (optional)
-  
+
         console.log("Token stored:", token);
         navigate("/dashboard");
       }
@@ -36,7 +35,6 @@ const LoginPage = () => {
       setError("An error occurred. Please try again.");
     }
   };
-  
 
   return (
     //bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity
@@ -85,7 +83,7 @@ const LoginPage = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="w-full py-3 px-4 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 font-bold
-              rounded-lg shadow-lg hover:opacity-90 transition-opacity focus:outline-none focus:ring-2
+              rounded-lg shadow-lg hover:opacity-90 focus:outline-none focus:ring-2
               focus:ring-gray-200 focus:ring-offset-2 focus:ring-offset-gray-900 transition duration-200"
               type="submit"
               disabled={isLoading}
@@ -112,6 +110,3 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
-function setError(error: any) {
-  throw new Error("Function not implemented.");
-}

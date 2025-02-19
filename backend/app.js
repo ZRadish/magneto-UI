@@ -19,12 +19,13 @@ import userRouter from './routes/userRoutes.js';
 import fileRouter from './routes/fileRoutes.js';
 import appRouter from './routes/appRoutes.js'; // Import the app router
 import testRouter from './routes/testRoutes.js';
+import magnetoRoutes from './routes/magnetoRoutes.js';
 
 app.use('/api/sample', sampleRouter); // Routes all requests to /api/sample to sampleRouter
 app.use('/api/user', userRouter); // Routes all requests to /api/user to userRouter
 app.use('/api/files', fileRouter); // Routes all requests to /api/files to fileRouter
 app.use('/api/app', appRouter); // Routes all requests to /api/app to appRouter
 app.use('/api/test', testRouter);
-
+app.use('/api/magneto', magnetoRoutes); // Routes all requests to /api to magnetoRoutes
 
 export default app;

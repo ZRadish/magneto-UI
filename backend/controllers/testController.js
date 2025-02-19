@@ -1,7 +1,7 @@
 import * as testService from '../services/testService.js';
 
 export const createTest = async (req, res) => {
-  const { appId, testName, oraclesSelected, notes, dateTime , fileId} = req.body;
+  const { appId, testName, oracleSelected, notes, dateTime , fileId} = req.body;
   const userId = req.user.id; // Assuming the `authenticateToken` middleware is used and adds `user` to `req`
 
   try {
@@ -9,7 +9,7 @@ export const createTest = async (req, res) => {
       appId,
       userId,
       testName,
-      oraclesSelected,
+      oracleSelected,
       notes,
       dateTime,
       fileId
