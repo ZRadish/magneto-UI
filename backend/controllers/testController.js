@@ -48,3 +48,17 @@ export const deleteTest = async (req, res) => {
       res.status(500).json({ success: false, error: error.message });
     }
   };
+
+  // Update Test Notes
+export const updateTestNotes = async (req, res) => {
+  const { testId } = req.params;
+  const { notes } = req.body;
+
+  try {
+    const updatedTest = await testService.updateTestNotesService(testId, notes);
+    res.status(200).json({ success: true, test: updatedTest });
+  } catch (error) {
+    console.error('[CONTROLLER] Error in updateTestNotes:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};

@@ -140,31 +140,51 @@ export const getTestsByAppService = async (appId) => {
     }
   };
 
-
-
-export const updateTestAfterRun = async (testId, { result, status }) => {
-  try {
-    // Validate testId
-    const testObjectId = new mongoose.Types.ObjectId(testId);
-
-    // Find and update the test
-    const updatedTest = await Test.findByIdAndUpdate(
-      testObjectId,
-      {
-        $set: {
-          result, // Update the result field
-          status, // Update the status field
-        },
-      },
-      { new: true } // Return the updated document
-    );
-
-    if (!updatedTest) {
-      throw new Error('Test not found or update failed');
+  export const updateTestNotesService = async (testId, notes) => {
+    try {
+      const testObjectId = new mongoose.Types.ObjectId(testId);
+  
+      const updatedTest = await Test.findByIdAndUpdate(
+        testObjectId,
+        { $set: { notes } },
+        { new: true, runValidators: true }
+      );
+  
+      if (!updatedTest) {
+        throw new Error('Test not found');
+      }
+  
+      return updatedTest;
+    } catch (error) {
+      throw new Error('Failed to update test notes: ' + error.message);
     }
+  };
 
-    return updatedTest;
-  } catch (error) {
-    throw new Error(`Failed to update test: ${error.message}`);
-  }
-};
+
+
+  export const updateTestAfterRun = async (testId, { result, status }) => {
+    try {
+      // Validate testId
+      const testObjectId = new mongoose.Types.ObjectId(testId);
+  
+      // Find and update the test
+      const updatedTest = await Test.findByIdAndUpdate(
+        testObjectId,
+        {
+          $set: {
+            result, // Update the result field
+            status, // Update the status field
+          },
+        },
+        { new: true } // Return the updated document
+      );
+  
+      if (!updatedTest) {
+        throw new Error('Test not found or update failed');
+      }
+  
+      return updatedTest;
+    } catch (error) {
+      throw new Error(`Failed to update test: ${error.message}`);
+    }
+  };

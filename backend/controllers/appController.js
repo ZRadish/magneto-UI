@@ -47,5 +47,40 @@ export const deleteApp = async (req, res) => {
     }
   };
   
+// Controller for updating an app's name
+export const updateAppName = async (req, res) => {
+    const { appId } = req.params;
+    const { appName } = req.body;
+    const userId = req.user.id; // Extract userId from authentication middleware
   
+    if (!appName || appName.trim() === "") {
+      return res.status(400).json({ success: false, error: "App name cannot be empty" });
+    }
   
+    try {
+      const updatedApp = await appService.updateAppNameService(appId, userId, appName.trim());
+      res.status(200).json({ success: true, app: updatedApp });
+    } catch (error) {
+      console.error("[CONTROLLER] Error in updateAppName:", error.message);
+      res.status(500).json({ success: false, error: error.message });
+    }
+};
+  
+  // Controller for updating an app's description
+export const updateAppDescription = async (req, res) => {
+  const { appId } = req.params;
+  const { description } = req.body;
+  const userId = req.user.id; // Extract userId from authentication middleware
+
+  if (!description || description.trim() === "") {
+    return res.status(400).json({ success: false, error: "Description cannot be empty" });
+  }
+
+  try {
+    const updatedApp = await appService.updateAppDescriptionService(appId, userId, description.trim());
+    res.status(200).json({ success: true, app: updatedApp });
+  } catch (error) {
+    console.error("[CONTROLLER] Error in updateAppDescription:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
