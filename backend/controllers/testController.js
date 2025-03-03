@@ -62,3 +62,26 @@ export const updateTestNotes = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+export const downloadTestResult = async (req, res) => {
+  try {
+      const { testId } = req.params;
+      const { file, bucket } = await testService.getTestResultFile(testId);
+
+      // Set response headers for file download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
+
+      // Stream file from GridFS
+      const downloadStream = bucket.openDownloadStream(file._id);
+      downloadStream.pipe(res);
+
+      downloadStream.on('error', () => {
+          res.status(500).json({ success: false, message: 'Error downloading file' });
+      });
+
+  } catch (error) {
+      console.error('[CONTROLLER] Download Test Result Error:', error.message);
+      res.status(500).json({ success: false, message: error.message });
+  }
+};

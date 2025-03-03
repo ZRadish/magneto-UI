@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import Test from '../models/testModel.js';
 import App from '../models/appModel.js';
+import { GridFSBucket } from 'mongodb';
 
 export const createTestService = async ({
   appId,
@@ -142,3 +143,29 @@ export const deleteTestService = async (testId) => {
       throw new Error('Failed to update test notes: ' + error.message);
     }
   };
+
+export const getTestResultFile = async (testId) => {
+    try {
+        const db = mongoose.connection.db;
+        const bucket = new GridFSBucket(db, { bucketName: 'results' });
+
+        // Find the latest file associated with the test
+        const fileDoc = await db.collection('results.files')
+            .find({ 'metadata.testId': new mongoose.Types.ObjectId(testId) })
+            .sort({ uploadDate: -1 })
+            .limit(1)
+            .toArray();
+
+        if (!fileDoc.length) {
+            throw new Error('File not found');
+        }
+
+        return {
+            file: fileDoc[0],
+            bucket
+        };
+    } catch (error) {
+        console.error('[SERVICE] Error retrieving test result file:', error.message);
+        throw new Error('Failed to retrieve test result file');
+    }
+};
