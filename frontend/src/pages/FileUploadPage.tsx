@@ -44,6 +44,7 @@ const FileUploadPage = () => {
   };
 
   const runMagnetoTest = async (fileName: string) => {
+    console.log("Raw Oracle Selection:", oracleSelection);
     if (!oracleSelection || !testId || !appId) {
       setMsg("Missing required test parameters");
       return;
@@ -77,7 +78,7 @@ const FileUploadPage = () => {
         case "back button":
           endpoint = "/magneto/back-button";
           break;
-        case "orientation change":
+        case "user input":
           endpoint = "/magneto/user-entered-data";
           break;
         case "language detection":
