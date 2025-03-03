@@ -169,3 +169,25 @@ export const getTestResultFile = async (testId) => {
         throw new Error('Failed to retrieve test result file');
     }
 };
+
+export const getTestInputFile = async (fileId) => {
+    try {
+        const db = mongoose.connection.db;
+        const bucket = new GridFSBucket(db, { bucketName: 'files' });
+
+        // Find the file metadata using fileId
+        const fileDoc = await db.collection('files.files').findOne({
+            _id: new mongoose.Types.ObjectId(fileId)
+        });
+
+        if (!fileDoc) {
+            throw new Error('Input file not found');
+        }
+
+        return { file: fileDoc, bucket };
+    } catch (error) {
+        console.error('[SERVICE] Error retrieving input file:', error.message);
+        throw new Error('Failed to retrieve input file');
+    }
+};
+

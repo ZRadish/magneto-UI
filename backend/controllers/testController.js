@@ -85,3 +85,26 @@ export const downloadTestResult = async (req, res) => {
       res.status(500).json({ success: false, message: error.message });
   }
 };
+
+export const downloadTestInput = async (req, res) => {
+    try {
+        const { fileId } = req.params;
+        const { file, bucket } = await testService.getTestInputFile(fileId);
+
+        // Set headers for downloading the ZIP file
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
+
+        // Stream the file from GridFS to the response
+        const downloadStream = bucket.openDownloadStream(file._id);
+        downloadStream.pipe(res);
+
+        downloadStream.on('error', () => {
+            res.status(500).json({ success: false, message: 'Error downloading input file' });
+        });
+
+    } catch (error) {
+        console.error('[CONTROLLER] Download Input File Error:', error.message);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

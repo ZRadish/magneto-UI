@@ -119,66 +119,89 @@ const AppRow: React.FC<{
     fetchTests();
   }, [app.id, isExpanded]);
 
-  const handleFileDownload = async (e: React.MouseEvent, test: AppTest) => {
-    e.stopPropagation();
-    const token = localStorage.getItem("authToken");
-    if (!token) {
-      alert("Authentication token not found");
-      return;
-    }
-    if (!test.fileId) {
-      alert("No file available for download");
-      return;
-    }
-    try {
-      // Create a temporary anchor element for the download
-      const a = document.createElement("a");
-      // Set the href to the file download endpoint
-      a.href = `${import.meta.env.VITE_API_URL}/files/${test.fileId}`;
-      // Add the auth token to the href
-      if (token) {
-        a.href += `?token=${token}`;
-      }
-      // Set download attribute (optional filename)
-      if (test.fileName) {
-        a.download = test.fileName;
-      }
-      // Hide the anchor
-      a.style.display = "none";
-      // Add to document
-      document.body.appendChild(a);
-      // Trigger click
-      a.click();
-      // Cleanup
-      document.body.removeChild(a);
-    } catch (err) {
-      console.error("Error initiating download:", err);
-      alert("Failed to download file. Please try again.");
-    }
-  };
-
-  // const handleResultsDownload = async (e: React.MouseEvent, test: AppTest) => {
+  // const handleFileDownload = async (e: React.MouseEvent, test: AppTest) => {
   //   e.stopPropagation();
-  //   if (!test.result) {
-  //     alert("No results available for download");
+  //   const token = localStorage.getItem("authToken");
+  //   if (!token) {
+  //     alert("Authentication token not found");
   //     return;
   //   }
-
+  //   if (!test.fileId) {
+  //     alert("No file available for download");
+  //     return;
+  //   }
   //   try {
-  //     const blob = new Blob([test.result], { type: "text/plain" });
-  //     const url = window.URL.createObjectURL(blob);
+  //     // Create a temporary anchor element for the download
   //     const a = document.createElement("a");
-  //     a.href = url;
-  //     a.download = `${test.testName}-results.txt`;
+  //     // Set the href to the file download endpoint
+  //     a.href = `${import.meta.env.VITE_API_URL}/files/${test.fileId}`;
+  //     // Add the auth token to the href
+  //     if (token) {
+  //       a.href += `?token=${token}`;
+  //     }
+  //     // Set download attribute (optional filename)
+  //     if (test.fileName) {
+  //       a.download = test.fileName;
+  //     }
+  //     // Hide the anchor
+  //     a.style.display = "none";
+  //     // Add to document
   //     document.body.appendChild(a);
+  //     // Trigger click
   //     a.click();
-  //     window.URL.revokeObjectURL(url);
+  //     // Cleanup
   //     document.body.removeChild(a);
   //   } catch (err) {
-  //     console.error("Error downloading results:", err);
-  //     alert(err instanceof Error ? err.message : "Failed to download results");
+  //     console.error("Error initiating download:", err);
+  //     alert("Failed to download file. Please try again.");
   //   }
   // };
+
+  const handleInputFileDownload = async (e: React.MouseEvent, test: AppTest) => {
+    e.stopPropagation(); // Prevent row click event
+    
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+        alert("Authentication token not found");
+        return;
+    }
+
+    if (!test.fileId) {
+        alert("No input file available for download");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/test/input_download/${test.fileId}`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to download input file.");
+        }
+
+        // Convert response to Blob
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+
+        // Create a temporary anchor element to trigger download
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = test.fileName || "input_file.zip"; // Set filename
+        document.body.appendChild(a);
+        a.click();
+
+        // Cleanup
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    } catch (error) {
+        console.error("Error downloading input file:", error);
+        alert("Failed to download input file. Please try again.");
+    }
+};
 
   const handleResultsDownload = async (e: React.MouseEvent, test: AppTest) => {
     e.stopPropagation();
@@ -221,17 +244,6 @@ const AppRow: React.FC<{
     }
 };
 
-
-  // const openModal = async (type: "notes" | "results", testId: string) => {
-  //   setActiveModal({ type, testId });
-  //   const test = tests.find((t) => t._id === testId);
-
-  //   if (type === "notes") {
-  //     setEditableNotes(test?.notes || "");
-  //   } else if (type === "results") {
-  //     setModalContent(test?.result || "No results available");
-  //   }
-  // };
 
   const openModal = async (type: "notes" | "results", testId: string) => {
     setActiveModal({ type, testId });
@@ -493,7 +505,7 @@ const AppRow: React.FC<{
                             </span>
                             <button
                               className="text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20"
-                              onClick={(e) => handleFileDownload(e, test)}
+                              onClick={(e) => handleInputFileDownload(e, test)}
                               title="Download File"
                             >
                               <Download size={16} />
