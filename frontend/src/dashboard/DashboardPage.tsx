@@ -120,77 +120,170 @@ const AppRow: React.FC<{
     fetchTests();
   }, [app.id, isExpanded]);
 
-  const handleFileDownload = async (e: React.MouseEvent, test: AppTest) => {
+  // const handleFileDownload = async (e: React.MouseEvent, test: AppTest) => {
+  //   e.stopPropagation();
+  //   const token = localStorage.getItem("authToken");
+  //   if (!token) {
+  //     alert("Authentication token not found");
+  //     return;
+  //   }
+  //   if (!test.fileId) {
+  //     alert("No file available for download");
+  //     return;
+  //   }
+  //   try {
+  //     // Create a temporary anchor element for the download
+  //     const a = document.createElement("a");
+  //     // Set the href to the file download endpoint
+  //     a.href = `${import.meta.env.VITE_API_URL}/files/${test.fileId}`;
+  //     // Add the auth token to the href
+  //     if (token) {
+  //       a.href += `?token=${token}`;
+  //     }
+  //     // Set download attribute (optional filename)
+  //     if (test.fileName) {
+  //       a.download = test.fileName;
+  //     }
+  //     // Hide the anchor
+  //     a.style.display = "none";
+  //     // Add to document
+  //     document.body.appendChild(a);
+  //     // Trigger click
+  //     a.click();
+  //     // Cleanup
+  //     document.body.removeChild(a);
+  //   } catch (err) {
+  //     console.error("Error initiating download:", err);
+  //     alert("Failed to download file. Please try again.");
+  //   }
+  // };
+
+  const handleInputFileDownload = async (e: React.MouseEvent, test: AppTest) => {
+    e.stopPropagation(); // Prevent row click event
+    
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+        alert("Authentication token not found");
+        return;
+    }
+
+    if (!test.fileId) {
+        alert("No input file available for download");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/test/input_download/${test.fileId}`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to download input file.");
+        }
+
+        // Convert response to Blob
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+
+        // Create a temporary anchor element to trigger download
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = test.fileName || "input_file.zip"; // Set filename
+        document.body.appendChild(a);
+        a.click();
+
+        // Cleanup
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    } catch (error) {
+        console.error("Error downloading input file:", error);
+        alert("Failed to download input file. Please try again.");
+    }
+};
+
+  const handleResultsDownload = async (e: React.MouseEvent, test: AppTest) => {
     e.stopPropagation();
+    
     const token = localStorage.getItem("authToken");
     if (!token) {
       alert("Authentication token not found");
       return;
     }
-    if (!test.fileId) {
-      alert("No file available for download");
-      return;
-    }
-    try {
-      // Create a temporary anchor element for the download
-      const a = document.createElement("a");
-      // Set the href to the file download endpoint
-      a.href = `${import.meta.env.VITE_API_URL}/files/${test.fileId}`;
-      // Add the auth token to the href
-      if (token) {
-        a.href += `?token=${token}`;
-      }
-      // Set download attribute (optional filename)
-      if (test.fileName) {
-        a.download = test.fileName;
-      }
-      // Hide the anchor
-      a.style.display = "none";
-      // Add to document
-      document.body.appendChild(a);
-      // Trigger click
-      a.click();
-      // Cleanup
-      document.body.removeChild(a);
-    } catch (err) {
-      console.error("Error initiating download:", err);
-      alert("Failed to download file. Please try again.");
-    }
-  };
-
-  const handleResultsDownload = async (e: React.MouseEvent, test: AppTest) => {
-    e.stopPropagation();
-    if (!test.result) {
-      alert("No results available for download");
-      return;
-    }
 
     try {
-      const blob = new Blob([test.result], { type: "text/plain" });
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/test/result_download/${test._id}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to download results.");
+      }
+
+      // Create a Blob from the response
+      const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
+
+      // Create a temporary anchor element to trigger the download
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${test.testName}-results.txt`;
+      a.download = `${test.testName}-results.pdf`; // Set filename
       document.body.appendChild(a);
       a.click();
+
+      // Cleanup
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-    } catch (err) {
-      console.error("Error downloading results:", err);
-      alert(err instanceof Error ? err.message : "Failed to download results");
+    } catch (error) {
+      console.error("Error downloading results:", error);
+      alert("Failed to download results. Please try again.");
     }
-  };
+};
+
 
   const openModal = async (type: "notes" | "results", testId: string) => {
     setActiveModal({ type, testId });
-    const test = tests.find((t) => t._id === testId);
-
+  
     if (type === "notes") {
+      const test = tests.find((t) => t._id === testId);
       setEditableNotes(test?.notes || "");
     } else if (type === "results") {
-      setModalContent(test?.result || "No results available");
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        alert("Authentication token not found");
+        return;
+      }
+  
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/test/result_download/${testId}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+  
+        if (!response.ok) {
+          throw new Error("Failed to fetch PDF.");
+        }
+  
+        // Convert response to Blob and create a URL
+        const blob = await response.blob();
+        const pdfUrl = URL.createObjectURL(blob);
+  
+        // Set modal content as the PDF URL
+        setModalContent(pdfUrl);
+      } catch (error) {
+        console.error("Error fetching PDF:", error);
+        alert("Failed to load PDF. Please try again.");
+      }
     }
   };
+  
 
   const handleSaveNotes = async () => {
     if (!activeModal?.testId) return;
@@ -448,7 +541,7 @@ const AppRow: React.FC<{
                             </span>
                             <button
                               className="text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20"
-                              onClick={(e) => handleFileDownload(e, test)}
+                              onClick={(e) => handleInputFileDownload(e, test)}
                               title="Download File"
                             >
                               <Download size={16} />
@@ -547,43 +640,53 @@ const AppRow: React.FC<{
 
       {activeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-900 p-8 rounded-xl max-w-2xl w-full border border-violet-900">
-            <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
-              {activeModal.type === "notes" ? "Notes" : "Results"}
-            </h2>
-            <div className="max-h-96 overflow-y-auto">
-              {activeModal.type === "notes" ? (
-                <textarea
-                  className="w-full h-64 bg-gray-800 text-gray-300 p-6 rounded-xl border border-violet-900 focus:border-violet-700 focus:outline-none resize-none"
-                  value={editableNotes}
-                  onChange={(e) => setEditableNotes(e.target.value)}
-                  placeholder="Enter your notes here..."
+        <div className="bg-gray-900 p-6 rounded-lg max-w-2xl w-full border border-violet-900">
+          <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
+            {activeModal.type === "notes" ? "Notes" : "Results"}
+          </h2>
+      
+          <div className="max-h-[80vh] overflow-y-auto">
+            {activeModal.type === "notes" ? (
+              <textarea
+                className="w-full h-64 bg-gray-800 text-gray-300 p-4 rounded-lg border border-violet-900 focus:border-violet-700 focus:outline-none resize-none"
+                value={editableNotes}
+                onChange={(e) => setEditableNotes(e.target.value)}
+                placeholder="Enter your notes here..."
+              />
+            ) : (
+              // Embed the PDF inside an iframe
+              modalContent ? (
+                <iframe
+                  src={modalContent}
+                  title="PDF Result"
+                  className="w-full h-[500px] border border-gray-700 rounded-lg"
                 />
               ) : (
-                <pre className="text-gray-400 whitespace-pre-wrap p-6 bg-gray-800 rounded-xl">
-                  {modalContent}
-                </pre>
-              )}
-            </div>
-            <div className="mt-6 flex justify-end gap-4">
-              {activeModal.type === "notes" && (
-                <button
-                  className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-xl hover:opacity-90 transition-opacity flex items-center gap-2"
-                  onClick={handleSaveNotes}
-                >
-                  <Save size={16} />
-                  Save Notes
-                </button>
-              )}
+                <p className="text-gray-400 text-center">Loading PDF...</p>
+              )
+            )}
+          </div>
+      
+          <div className="mt-4 flex justify-end gap-4">
+            {activeModal.type === "notes" && (
               <button
-                className="px-6 py-3 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-xl hover:opacity-90 transition-opacity"
-                onClick={() => setActiveModal(null)}
+                className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+                onClick={handleSaveNotes}
               >
-                Close
+                <Save size={16} />
+                Save Notes
               </button>
-            </div>
+            )}
+            <button
+              className="px-4 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
+              onClick={() => setActiveModal(null)}
+            >
+              Close
+            </button>
           </div>
         </div>
+      </div>
+      
       )}
     </div>
   );

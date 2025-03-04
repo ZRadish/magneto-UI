@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import Test from '../models/testModel.js';
 import App from '../models/appModel.js';
+import { GridFSBucket } from 'mongodb';
 
 export const createTestService = async ({
   appId,
@@ -160,8 +161,6 @@ export const getTestsByAppService = async (appId) => {
     }
   };
 
-
-
   export const updateTestAfterRun = async (testId, { result, status }) => {
     try {
       // Validate testId
@@ -188,3 +187,50 @@ export const getTestsByAppService = async (appId) => {
       throw new Error(`Failed to update test: ${error.message}`);
     }
   };
+
+export const getTestResultFile = async (testId) => {
+    try {
+        const db = mongoose.connection.db;
+        const bucket = new GridFSBucket(db, { bucketName: 'results' });
+
+        // Find the latest file associated with the test
+        const fileDoc = await db.collection('results.files')
+            .find({ 'metadata.testId': new mongoose.Types.ObjectId(testId) })
+            .sort({ uploadDate: -1 })
+            .limit(1)
+            .toArray();
+
+        if (!fileDoc.length) {
+            throw new Error('File not found');
+        }
+
+        return {
+            file: fileDoc[0],
+            bucket
+        };
+    } catch (error) {
+        console.error('[SERVICE] Error retrieving test result file:', error.message);
+        throw new Error('Failed to retrieve test result file');
+    }
+};
+
+export const getTestInputFile = async (fileId) => {
+    try {
+        const db = mongoose.connection.db;
+        const bucket = new GridFSBucket(db, { bucketName: 'files' });
+
+        // Find the file metadata using fileId
+        const fileDoc = await db.collection('files.files').findOne({
+            _id: new mongoose.Types.ObjectId(fileId)
+        });
+
+        if (!fileDoc) {
+            throw new Error('Input file not found');
+        }
+
+        return { file: fileDoc, bucket };
+    } catch (error) {
+        console.error('[SERVICE] Error retrieving input file:', error.message);
+        throw new Error('Failed to retrieve input file');
+    }
+};
