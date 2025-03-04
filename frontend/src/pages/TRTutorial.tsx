@@ -27,6 +27,12 @@ const TutorialPage = () => {
 
   const sections: Section[] = [
     {
+      id: "vid-demo",
+      title: "Video Tutorial",
+      level: 1,
+      icon: <PlayCircle className="w-4 h-4" />,
+    },
+    {
       id: "what-is",
       title: "What is TraceReplayer",
       level: 1,
@@ -153,16 +159,41 @@ const TutorialPage = () => {
       >
         <div className="max-w-5xl mt-6 mx-auto p-8">
           <section
-            ref={(el) => (contentRefs.current["what-is"] = el)}
-            className=" mb-12"
+            ref={(el) => (contentRefs.current["vid-demo"] = el)}
+            className="mb-12"
           >
             <h1 className="text-4xl font-bold text-center mb-4 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent border-b-2 border-violet-500 pb-4">
               Generating Input for MAGNETO Using TraceReplayer
             </h1>
+
+            {/* Updated Video Section with YouTube Embed */}
+            <div className="mt-8 mb-12">
+              <div className="bg-slate-900/50 rounded-xl shadow-lg p-8 border border-violet-500/20">
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent mb-6">
+                  TraceReplayer Demo
+                </h2>
+                <div className="relative w-full aspect-video rounded-lg overflow-hidden">
+                  <iframe
+                    className="w-full h-full absolute top-0 left-0"
+                    src="https://www.youtube-nocookie.com/embed/N-2mfqCkZ2Q?rel=0"
+                    title="TraceReplayer Tutorial"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+                <p className="text-gray-300 mt-4 text-center">
+                  A demonstration of using TraceReplayer
+                </p>
+              </div>
+            </div>
           </section>
 
           {/* What is Section */}
-          <section className="bg-slate-900/50 rounded-xl shadow-lg p-8 mb-8 border border-violet-500/20">
+          <section
+            ref={(el) => (contentRefs.current["what-is"] = el)}
+            className="bg-slate-900/50 rounded-xl shadow-lg p-8 mb-8 border border-violet-500/20"
+          >
             <div className="flex items-center gap-4 mb-6">
               <span className="p-3 bg-violet-500/10 rounded-lg text-violet-400">
                 <Book className="w-5 h-5" />

@@ -3,7 +3,7 @@ import axios, { AxiosProgressEvent } from "axios";
 import { motion } from "framer-motion";
 import { UploadCloud, Play, AlertCircle, X, Loader } from "lucide-react";
 import api from "../utils/api";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 
 const FileUploadPage = () => {
   const [searchParams] = useSearchParams();
@@ -44,6 +44,7 @@ const FileUploadPage = () => {
   };
 
   const runMagnetoTest = async (fileName: string) => {
+    console.log("Raw Oracle Selection:", oracleSelection);
     if (!oracleSelection || !testId || !appId) {
       setMsg("Missing required test parameters");
       return;
@@ -77,7 +78,7 @@ const FileUploadPage = () => {
         case "back button":
           endpoint = "/magneto/back-button";
           break;
-        case "orientation change":
+        case "user input":
           endpoint = "/magneto/user-entered-data";
           break;
         case "language detection":
@@ -111,6 +112,7 @@ const FileUploadPage = () => {
     }
   };
 
+  const navigate = useNavigate();
   const uploadFile = async () => {
     if (!files || files.length === 0) {
       setMsg("No files selected. Please choose files to upload.");
@@ -137,8 +139,8 @@ const FileUploadPage = () => {
     if (appId) fd.append("appId", appId);
 
     setMsg("Uploading files...");
-    setProgress((prevState) => ({ ...prevState, started: true }));
-
+    //setProgress((prevState) => ({ ...prevState, started: true }));
+    setProgress({ started: true, pc: 0 });
     try {
       const uploadResponse = await api.post("/files/upload", fd, {
         onUploadProgress: (progressEvent: AxiosProgressEvent) => {
@@ -163,6 +165,7 @@ const FileUploadPage = () => {
       // Run the Magneto test with the uploaded file ID
       console.log("here", fileName);
       await runMagnetoTest(fileName);
+      navigate("/dashboard", { state: { testId, fileName } });
     } catch (error) {
       setMsg("Upload or processing failed");
       if (axios.isAxiosError(error)) {

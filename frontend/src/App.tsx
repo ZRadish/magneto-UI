@@ -10,6 +10,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import DashboardPage from "./dashboard/DashboardPage";
 import GuidancePage from "./pages/GuidancePage";
 import TutorialPage from "./pages/TRTutorial";
+import ProfilePage from "./pages/ProfilePage";
 
 const App = () => {
   return (
@@ -26,6 +27,7 @@ const App = () => {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/guidance" element={<GuidancePage />} />
           <Route path="/tutorial" element={<TutorialPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Routes>
       </BrowserRouter>
     </>
