@@ -11,6 +11,7 @@ import DashboardPage from "./dashboard/DashboardPage";
 import GuidancePage from "./pages/GuidancePage";
 import TutorialPage from "./pages/TRTutorial";
 import ProfilePage from "./pages/ProfilePage";
+import FAQPage from "./pages/FAQ";
 
 const App = () => {
   return (
@@ -28,6 +29,7 @@ const App = () => {
           <Route path="/guidance" element={<GuidancePage />} />
           <Route path="/tutorial" element={<TutorialPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/faq" element={<FAQPage />} />
         </Routes>
       </BrowserRouter>
     </>
