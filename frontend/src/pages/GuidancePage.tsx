@@ -284,14 +284,14 @@ const GuidancePage: React.FC = () => {
                     <table className="w-full">
                       <thead>
                         <tr className="text-left text-gray-400">
-                          <th className="p-4 text-lg">Test Name</th>
-                          <th className="p-4 text-lg">File</th>
-                          <th className="p-4 text-lg">Created At</th>
-                          <th className="p-4 text-lg">Status</th>
-                          <th className="p-4 text-lg">Oracles Selected</th>
-                          <th className="p-4 text-lg">Notes</th>
-                          <th className="p-4 text-lg">Results</th>
-                          <th className="p-4 text-lg">Actions</th>
+                          <th className="p-4">Test Name</th>
+                          <th className="p-4">File</th>
+                          <th className="p-4">Created At</th>
+                          <th className="p-4">Status</th>
+                          <th className="p-4">Oracles Selected</th>
+                          <th className="p-4">Notes</th>
+                          <th className="p-4">Results</th>
+                          <th className="p-4">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="text-gray-400">
