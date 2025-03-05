@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import SideBar from "../components/SideBar";
+import { motion } from "framer-motion";
 import {
   Book,
   ChevronRight,
@@ -152,18 +153,21 @@ const TutorialPage = () => {
       </button>
 
       {/* Main content */}
-      <div
-        className={`flex-1 transition-all duration-300 ${
-          isSidebarOpen ? "ml-80" : "ml-16"
-        }`}
+      <motion.div
+        animate={{
+          marginLeft: isSidebarOpen ? "16rem" : "5rem",
+          width: isSidebarOpen ? "calc(100% - 16rem)" : "calc(100% - 5rem)",
+        }}
+        transition={{ duration: 0.3 }}
+        className="flex-1"
       >
         <div className="max-w-5xl mt-6 mx-auto p-8">
           <section
             ref={(el) => (contentRefs.current["vid-demo"] = el)}
             className="mb-12"
           >
-            <h1 className="text-4xl font-bold text-center mb-4 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent border-b-2 border-violet-500 pb-4">
-              Generating Input for MAGNETO Using TraceReplayer
+            <h1 className="text-5xl font-bold text-center mt-8 mb-8 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
+              TraceReplayer Guide
             </h1>
 
             {/* Updated Video Section with YouTube Embed */}
@@ -743,7 +747,7 @@ const TutorialPage = () => {
             </p>
           </section>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
