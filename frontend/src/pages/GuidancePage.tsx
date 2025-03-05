@@ -153,10 +153,6 @@ const GuidancePage: React.FC = () => {
       content:
         "This shows the type of oracle (testing method) selected for the test.",
     },
-    // {
-    //   target: ".test-status",
-    //   content: "The status indicates that the test has successfully completed.",
-    // },
     {
       target: ".test-progress-bar",
       content:
@@ -218,7 +214,7 @@ const GuidancePage: React.FC = () => {
         floaterProps={{
           styles: {
             container: {
-              zIndex: 100,
+              zIndex: 10000,
             },
           },
           disableAnimation: true,
@@ -307,7 +303,7 @@ const GuidancePage: React.FC = () => {
                                   <span className="text-yellow-600 w-1/4">
                                     {test.testName}
                                   </span>
-                                  <div className="w-3/4 bg-gray-700 rounded-full h-2.5">
+                                  <div className="w-full bg-gray-700 rounded-full h-2.5">
                                     <div
                                       className="bg-yellow-600 h-2.5 rounded-full"
                                       style={{
