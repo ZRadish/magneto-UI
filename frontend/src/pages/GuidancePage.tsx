@@ -141,7 +141,7 @@ const GuidancePage: React.FC = () => {
     {
       target: ".first-test-row",
       content:
-        "This here is one of the mockTests ran for your application. It shows details like test name, file, and other relevant information.",
+        "This here is one of the tests ran for your application. It shows details like test name, file, and other relevant information.",
     },
     {
       target: ".first-file-download-button",
@@ -160,7 +160,7 @@ const GuidancePage: React.FC = () => {
     {
       target: ".test-progress-bar",
       content:
-        "For pending mockTests, a progress bar is displayed until the test finishes running. Once completed, the test information appears, and the status updates to 'completed'. ",
+        "For pending tests, a progress bar is displayed until the test finishes running. Once completed, the test information appears, and the status updates to 'completed'. ",
     },
     {
       target: ".notes-edit-button",
@@ -250,24 +250,24 @@ const GuidancePage: React.FC = () => {
           {mockApps.map((app) => (
             <div
               key={app.id}
-              className="border border-violet-900 rounded-lg mb-4 hover:border-violet-700 transition-colors hover:shadow-lg hover:shadow-violet-900/50"
+              className="border border-violet-900 rounded-2xl mb-6 hover:border-violet-700 transition-colors hover:shadow-xl hover:shadow-violet-900/50"
             >
               <div
-                className={`app-name-1 flex items-center p-4 cursor-pointer bg-gray-900`}
+                className={`app-name-1 flex items-center p-6 cursor-pointer bg-gray-900 rounded-2xl`}
                 onClick={() => toggleAppExpansion(app.id)}
               >
-                <Folder className="mr-2 text-violet-500" size={20} />
+                <Folder className="mr-4 text-violet-500" size={24} />
                 <span className="flex-grow text-gray-400">{app.name}</span>
                 <button
-                  className="mr-2 text-violet-500 hover:text-violet-400 transition-colors app-edit-icon"
+                  className="mr-4 text-violet-500 hover:text-violet-400 transition-colors app-edit-icon"
                   onClick={(e) => {
                     e.stopPropagation();
                   }}
                 >
-                  <Edit size={20} />
+                  <Edit size={24} />
                 </button>
                 <ChevronRight
-                  size={20}
+                  size={24}
                   className={`text-violet-500 transition-transform ${
                     expandedApps.includes(app.id) ? "rotate-90" : ""
                   }`}
@@ -275,8 +275,8 @@ const GuidancePage: React.FC = () => {
               </div>
 
               {expandedApps.includes(app.id) && (
-                <div className="p-4 bg-gray-900/50">
-                  <div className="text-gray-400 mb-4 border border-gray-700 rounded-lg p-3 app-description">
+                <div className="p-6 bg-gray-900/50">
+                  <div className="text-gray-400 mb-6 border border-gray-700 rounded-2xl p-4 app-description">
                     <p className="text-gray-400">{app.description}</p>
                   </div>
 
@@ -284,14 +284,14 @@ const GuidancePage: React.FC = () => {
                     <table className="w-full">
                       <thead>
                         <tr className="text-left text-gray-400">
-                          <th className="p-3">Test Name</th>
-                          <th className="p-3">File</th>
-                          <th className="p-3">Created At</th>
-                          <th className="p-3">Status</th>
-                          <th className="p-3">Oracles Selected</th>
-                          <th className="p-3">Notes</th>
-                          <th className="p-3">Results</th>
-                          <th className="p-3">Actions</th>
+                          <th className="p-4 text-lg">Test Name</th>
+                          <th className="p-4 text-lg">File</th>
+                          <th className="p-4 text-lg">Created At</th>
+                          <th className="p-4 text-lg">Status</th>
+                          <th className="p-4 text-lg">Oracles Selected</th>
+                          <th className="p-4 text-lg">Notes</th>
+                          <th className="p-4 text-lg">Results</th>
+                          <th className="p-4 text-lg">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="text-gray-400">
@@ -302,7 +302,7 @@ const GuidancePage: React.FC = () => {
                           >
                             {test.status === "pending" ? (
                               // Pending test row with progress bar
-                              <td colSpan={8} className="p-3">
+                              <td colSpan={8} className="p-4">
                                 <div className="flex items-center space-x-4 test-progress-bar">
                                   <span className="text-yellow-600 w-1/4">
                                     {test.testName}

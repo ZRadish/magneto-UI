@@ -553,8 +553,8 @@ const AppRow: React.FC<{
                       key={test._id}
                       className="hover:bg-gray-800/50 transition-colors rounded-2xl"
                     >
-                      <td className="p-4 text-base">{test.testName}</td>
-                      <td className="p-4">
+                      <td className="p-3 text-base">{test.testName}</td>
+                      <td className="p-3">
                         {test.fileId ? (
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-gray-400">
