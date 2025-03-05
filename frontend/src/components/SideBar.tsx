@@ -8,6 +8,7 @@ import {
   ArrowLeftOnRectangleIcon,
   PlayIcon,
   InformationCircleIcon,
+  QuestionMarkCircleIcon,
 } from "@heroicons/react/24/outline";
 
 const SideBar = () => {
@@ -35,6 +36,8 @@ const SideBar = () => {
       setIsOpen(false);
       containerControls.start("close");
       svgControls.start("close");
+      localStorage.setItem("sidebarOpen", "false");
+      window.dispatchEvent(new Event("storage"));
     }
   }, [location.pathname]);
 
@@ -42,9 +45,13 @@ const SideBar = () => {
     if (isOpen) {
       containerControls.start("open");
       svgControls.start("open");
+      localStorage.setItem("sidebarOpen", "true");
+      window.dispatchEvent(new Event("storage"));
     } else {
       containerControls.start("close");
       svgControls.start("close");
+      localStorage.setItem("sidebarOpen", "false");
+      window.dispatchEvent(new Event("storage"));
     }
   }, [isOpen]);
 
@@ -77,6 +84,11 @@ const SideBar = () => {
 
   const handleGuidanceClick = () => {
     navigate("/guidance");
+    setIsOpen(true);
+  };
+
+  const handleFaqClick = () => {
+    navigate("/faq");
     setIsOpen(true);
   };
 
@@ -177,6 +189,16 @@ const SideBar = () => {
               className={getLinkClassName("/guidance")}
             >
               <InformationCircleIcon className="stroke-inherit stroke-[0.75] min-w-8 w-8" />
+            </SideBarLink>
+
+            <SideBarLink
+              name="FAQ"
+              isOpen={isOpen}
+              to="/faq"
+              onClick={handleFaqClick}
+              className={getLinkClassName("/faq")}
+            >
+              <QuestionMarkCircleIcon className="stroke-inherit stroke-[0.75] min-w-8 w-8" />
             </SideBarLink>
           </div>
 
