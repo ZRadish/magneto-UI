@@ -1,327 +1,399 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Play, Download, Save } from "lucide-react";
-import { Folder, ChevronDown, ChevronRight } from "lucide-react";
-import Joyride, { STATUS } from "react-joyride";
+import React, { useEffect, useState } from "react";
+import Joyride, { CallBackProps, Step } from "react-joyride";
+import {
+  Folder,
+  ChevronRight,
+  Play,
+  Download,
+  Trash2,
+  Edit,
+} from "lucide-react";
 import SideBar from "../components/SideBar";
-
-interface AppTest {
-  id: string;
-  name: string;
-  dateTime: string;
-  oracles: string[]; // Changed to array of oracle types that were tested
-  notes: string;
-  results: string;
-}
-
-interface App {
-  id: string;
-  name: string;
-  tests: AppTest[];
-}
-
-const AppRow: React.FC<{
-  app: App;
-  onUpdateNotes: (testId: string, newNotes: string) => void;
-  setModalOpen: (isOpen: boolean) => void;
-}> = ({ app, onUpdateNotes, setModalOpen }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [activeModal, setActiveModal] = useState<{
-    type: "notes" | "results";
-    testId: string;
-  } | null>(null);
-  const [editableNotes, setEditableNotes] = useState("");
-
-  const handleDownload = (e: React.MouseEvent, test: AppTest) => {
-    e.stopPropagation();
-    const element = document.createElement("a");
-    const file = new Blob([test.results], { type: "text/plain" });
-    element.href = URL.createObjectURL(file);
-    element.download = `${test.name}-results.txt`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-  };
-
-  const openModal = (type: "notes" | "results", testId: string) => {
-    setActiveModal({ type, testId });
-    setModalOpen(true);
-    if (type === "notes") {
-      const test = app.tests.find((t) => t.id === testId);
-      setEditableNotes(test?.notes || "");
-    }
-  };
-
-  const handleSaveNotes = () => {
-    if (activeModal?.testId) {
-      onUpdateNotes(activeModal.testId, editableNotes);
-      setActiveModal(null);
-    }
-  };
-
-  return (
-    <div className="border border-violet-900 rounded-lg mb-4 hover:border-violet-700 transition-colors hover:shadow-lg hover:shadow-violet-900/50">
-      <div
-        className="flex items-center p-4 cursor-pointer bg-gray-900"
-        onClick={() => setIsExpanded(!isExpanded)}
-        id="app-row"
-      >
-        <Folder className="mr-2 text-violet-500" size={20} />
-        <span className="flex-grow text-gray-400">{app.name}</span>
-        {isExpanded ? (
-          <ChevronDown size={20} className="text-violet-500" />
-        ) : (
-          <ChevronRight size={20} className="text-violet-500" />
-        )}
-      </div>
-
-      {isExpanded && (
-        <div className="p-4 bg-gray-900/50">
-          <table className="w-full">
-            <thead>
-              <tr className="text-left text-gray-400">
-                <th className="p-2">Test</th>
-                <th className="p-2">Date/Time</th>
-                <th className="p-2">Oracles Tested</th>
-                <th className="p-2">Notes</th>
-                <th className="p-2">Results</th>
-              </tr>
-            </thead>
-            <tbody className="text-gray-400">
-              {app.tests.map((test) => (
-                <tr key={test.id}>
-                  <td className="p-2">{test.name}</td>
-                  <td className="p-2">{test.dateTime}</td>
-                  <td className="p-2">
-                    <div className="space-y-1">
-                      {test.oracles.map((oracle, index) => (
-                        <div key={index}>{oracle}</div>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="p-2">
-                    <button
-                      id="view-notes-btn"
-                      className="text-violet-500 hover:text-violet-400 transition-colors"
-                      onClick={() => openModal("notes", test.id)}
-                    >
-                      View/Edit Notes
-                    </button>
-                  </td>
-                  <td className="p-2">
-                    <div className="flex items-center gap-2">
-                      <button
-                        id="view-results-btn"
-                        className="text-violet-500 hover:text-violet-400 transition-colors"
-                        onClick={() => openModal("results", test.id)}
-                      >
-                        View Results
-                      </button>
-                      <button
-                        id="download-btn"
-                        className="text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20"
-                        onClick={(e) => handleDownload(e, test)}
-                        title="Download Results"
-                      >
-                        <Download size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {activeModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-900 p-6 rounded-lg max-w-2xl w-full border border-violet-900">
-            <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
-              {activeModal.type === "notes" ? "Notes" : "Results"}
-            </h2>
-            <div className="max-h-96 overflow-y-auto">
-              {activeModal.type === "notes" ? (
-                <textarea
-                  className="w-full h-64 bg-gray-800 text-gray-300 p-4 rounded-lg border border-violet-900 focus:border-violet-700 focus:outline-none resize-none"
-                  value={editableNotes}
-                  onChange={(e) => setEditableNotes(e.target.value)}
-                  placeholder="Enter your notes here..."
-                />
-              ) : (
-                <div className="text-gray-400">
-                  {app.tests.find((t) => t.id === activeModal.testId)?.results}
-                </div>
-              )}
-            </div>
-            <div className="mt-4 flex justify-end gap-4">
-              {activeModal.type === "notes" && (
-                <button
-                  className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
-                  onClick={handleSaveNotes}
-                >
-                  <Save size={16} />
-                  Save Notes
-                </button>
-              )}
-              <button
-                className="px-4 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
-                onClick={() => setActiveModal(null)}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+import { useNavigate } from "react-router-dom";
 
 const GuidancePage: React.FC = () => {
+  // Initialize state with the first app's ID open
+  const [expandedApps, setExpandedApps] = useState<string[]>(["1"]);
+  const [runTour, setRunTour] = useState(true);
   const navigate = useNavigate();
-  const [, setIsModalOpen] = useState(false);
-  const [runTourOnMount, setRunTourOnMount] = useState(true);
 
-  // Joyride steps
-  const steps = [
-    {
-      target: "#run-test-btn",
-      content:
-        "Click here to start a new test. This will let you select which oracles to test for your application.",
-      disableBeacon: true,
-    },
-    {
-      target: "#app-row",
-      content: "Click on an app to expand and see all its test results.",
-    },
-    {
-      target: "#view-notes-btn",
-      content:
-        "View and edit notes for each test run. This helps track important observations.",
-    },
-    {
-      target: "#view-results-btn",
-      content: "View detailed results from your test run.",
-    },
-    {
-      target: "#download-btn",
-      content: "Download the test results for offline viewing or sharing.",
-    },
-  ];
-
-  const handleJoyrideCallback = (data: any) => {
-    const { status } = data;
-    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
-      // Store in localStorage that the user has seen the tour
-      localStorage.setItem("hasSeenTour", "true");
+  useEffect(() => {
+    if (runTour) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
     }
-  };
+    return () => {
+      document.body.style.overflow = ""; // Reset on unmount
+    };
+  }, [runTour]);
 
-  // Check if user has seen tour before
-  React.useEffect(() => {
-    const hasSeenTour = localStorage.getItem("hasSeenTour");
-    if (hasSeenTour) {
-      setRunTourOnMount(false);
-    }
-  }, []);
-
-  const [apps, setApps] = useState<App[]>([
+  // Mock data with sample mockTests
+  const mockApps = [
     {
       id: "1",
-      name: "App 1",
-      tests: [
+      name: "Sample Mobile App",
+      description: "A sample mobile application for testing user interfaces",
+      mockTests: [
         {
-          id: "1",
-          name: "12.zip",
-          dateTime: "2024-01-14 10:00",
-          oracles: ["Language", "Theme"], // Only showing which oracles were tested
-          notes: "Test notes for App 1",
-          results: "Test results for App 1",
+          _id: "t1",
+          testName: "Theme Consistency Check",
+          fileName: "17.zip",
+          createdAt: new Date("2024-03-01").toLocaleString(),
+          status: "completed",
+          oracleSelected: "Theme Check",
+          notes: "Initial theme test for color consistency",
+          result: "Passed",
         },
         {
-          id: "2",
-          name: "13.zip",
-          dateTime: "2024-01-14 10:00",
-          oracles: ["Language", "Orientation"], // Different combination of oracles
-          notes: "Test notes for App 1 test 2",
-          results: "Test results for App 1 test 2",
+          _id: "t2",
+          testName: "Back Button Functionality",
+          fileName: "18.zip",
+          createdAt: new Date("2024-03-15").toLocaleString(),
+          status: "completed",
+          oracleSelected: "Back Button",
+          notes: "Checking navigation flow",
+          result: "Pending",
+        },
+        {
+          _id: "t3",
+          testName: "Language Detection Test",
+          fileName: "21.zip",
+          createdAt: new Date("2024-02-20").toLocaleString(),
+          status: "completed",
+          oracleSelected: "Language Detection",
+          notes: "Verifying multi-language support",
+          result: "Passed",
+        },
+        {
+          _id: "t4",
+          testName: "User Input Validation",
+          fileName: "22.zip",
+          createdAt: new Date("2024-03-10").toLocaleString(),
+          status: "pending",
+          oracleSelected: "User Input",
+          notes: "Checking input field validations",
+          result: "Pending",
         },
       ],
     },
     {
       id: "2",
-      name: "App 2",
-      tests: [
-        {
-          id: "2",
-          name: "34.zip",
-          dateTime: "2024-01-14 12:00",
-          oracles: ["Theme", "Orientation"], // Another combination
-          notes: "",
-          results: "Test results for App 2",
-        },
-      ],
+      name: "Language Learning App",
+      description: "An educational app for multilingual learning",
+      mockTests: [],
     },
-  ]);
+  ];
 
-  const handleUpdateNotes = (testId: string, newNotes: string) => {
-    setApps((prevApps) =>
-      prevApps.map((app) => ({
-        ...app,
-        tests: app.tests.map((test) =>
-          test.id === testId ? { ...test, notes: newNotes } : test
-        ),
-      }))
+  // Static progress for the pending test
+  const testProgress: Record<string, number> = {
+    t4: 67,
+  };
+
+  // Toggle app expansion
+  const toggleAppExpansion = (appId: string) => {
+    setExpandedApps((prev) =>
+      prev.includes(appId)
+        ? prev.filter((id) => id !== appId)
+        : [...prev, appId]
     );
   };
 
+  const getStatusColorClass = (status: string) => {
+    return status === "completed"
+      ? "bg-green-500/20 text-green-400"
+      : "bg-yellow-500/20 text-yellow-400";
+  };
+
+  const getOracleColorClass = (oracle: string) => {
+    const colorClasses = {
+      "Theme Check": "bg-orange-900/20 text-orange-400",
+      "Back Button": "bg-blue-900/20 text-blue-400",
+      "Language Detection": "bg-pink-900/20 text-pink-400",
+      "User Input": "bg-yellow-900/20 text-yellow-400",
+    };
+    return (
+      colorClasses[oracle as keyof typeof colorClasses] ||
+      "bg-violet-900/20 text-violet-400"
+    );
+  };
+
+  // Updated Joyride tour steps
+  const tourSteps: Step[] = [
+    {
+      target: ".run-test-button",
+      content:
+        "When you click the Run Test button, you'll be guided through a series of modals where you'll need to provide detailed information about the app and the specific test you wish to run. These modals will ensure all the necessary parameters are collected before initiating the test.",
+      disableBeacon: true,
+    },
+    {
+      target: ".app-name-1",
+      content: "Here you can see the name of your application.",
+    },
+    {
+      target: ".app-edit-icon",
+      content: "Press this here to edit the application name.",
+    },
+    {
+      target: ".app-description",
+      content: "This section provides a brief description of the application.",
+    },
+    {
+      target: ".first-test-row",
+      content:
+        "This here is one of the mockTests ran for your application. It shows details like test name, file, and other relevant information.",
+    },
+    {
+      target: ".first-file-download-button",
+      content:
+        "Click this button to download the file uploaded to run the test.",
+    },
+    {
+      target: ".oracle-selected",
+      content:
+        "This shows the type of oracle (testing method) selected for the test.",
+    },
+    // {
+    //   target: ".test-status",
+    //   content: "The status indicates that the test has successfully completed.",
+    // },
+    {
+      target: ".test-progress-bar",
+      content:
+        "For pending mockTests, a progress bar is displayed until the test finishes running. Once completed, the test information appears, and the status updates to 'completed'. ",
+    },
+    {
+      target: ".notes-edit-button",
+      content:
+        "Use this button here to view or edit notes for a specific test.",
+    },
+    {
+      target: ".results-view-icon",
+      content: "Click this icon to view the test results.",
+    },
+    {
+      target: ".results-download-icon",
+      content: "Use this icon to download the test results.",
+    },
+    {
+      target: ".test-delete-icon",
+      content: "This icon here allows you to delete the test.",
+    },
+  ];
+
+  // Handle Joyride callback
+  const handleJoyrideCallback = (data: CallBackProps) => {
+    const { status } = data;
+
+    // When tour is finished, navigate to dashboard
+    if (status === "finished" || status === "skipped") {
+      setRunTour(false);
+      navigate("/dashboard");
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 to-gray-950">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 to-gray-950 overflow-hidden">
       <Joyride
-        steps={steps}
-        run={runTourOnMount}
+        steps={tourSteps}
+        run={runTour}
         continuous
-        showProgress
         showSkipButton
+        showProgress
         callback={handleJoyrideCallback}
+        scrollToFirstStep={false}
+        spotlightClicks={false}
+        disableOverlayClose
         styles={{
           options: {
-            primaryColor: "#8B5CF6",
-            backgroundColor: "#1F2937",
-            textColor: "#F3F4F6",
-            arrowColor: "#1F2937",
-            overlayColor: "rgba(0, 0, 0, 0.5)",
+            zIndex: 10000,
+            primaryColor: "#8b5cf6", // Tailwind violet-500
+            overlayColor: "rgba(0, 0, 0, 0.7)", // Darker overlay background
+          },
+          spotlight: {
+            borderRadius: "8px",
+            boxShadow: "0 0 0 2px #b794f4, 0 0 20px rgba(139, 92, 270, 0.5)", // Violet glow effect
           },
         }}
+        floaterProps={{
+          styles: {
+            container: {
+              zIndex: 100,
+            },
+          },
+          disableAnimation: true,
+        }}
       />
+
       <SideBar />
-      <div className="ml-64 p-8">
+      <div className="ml-64 p-8 relative">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent mb-2">
-              MAGNETO
+              Guidance Page
             </h1>
-            <h2 className="text-xl font-semibold text-gray-400">Apps:</h2>
+            <h2 className="text-xl font-semibold text-gray-400">Apps</h2>
           </div>
-          <button
-            id="run-test-btn"
-            onClick={() => navigate("/run-test")}
-            className="px-6 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2"
-          >
+          <button className="run-test-button px-6 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg flex items-center space-x-2">
             <Play size={20} />
             <span>Run Test</span>
           </button>
         </div>
 
-        <div className="space-y-4">
-          {apps.map((app) => (
-            <AppRow
+        <div
+          className="space-y-4 h-[calc(100vh-200px)] overflow-auto bg-gray-800 rounded-lg p-4 shadow-lg"
+          style={{
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+          }}
+        >
+          {mockApps.map((app) => (
+            <div
               key={app.id}
-              app={app}
-              onUpdateNotes={handleUpdateNotes}
-              setModalOpen={setIsModalOpen}
-            />
+              className="border border-violet-900 rounded-lg mb-4 hover:border-violet-700 transition-colors hover:shadow-lg hover:shadow-violet-900/50"
+            >
+              <div
+                className={`app-name-1 flex items-center p-4 cursor-pointer bg-gray-900`}
+                onClick={() => toggleAppExpansion(app.id)}
+              >
+                <Folder className="mr-2 text-violet-500" size={20} />
+                <span className="flex-grow text-gray-400">{app.name}</span>
+                <button
+                  className="mr-2 text-violet-500 hover:text-violet-400 transition-colors app-edit-icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  <Edit size={20} />
+                </button>
+                <ChevronRight
+                  size={20}
+                  className={`text-violet-500 transition-transform ${
+                    expandedApps.includes(app.id) ? "rotate-90" : ""
+                  }`}
+                />
+              </div>
+
+              {expandedApps.includes(app.id) && (
+                <div className="p-4 bg-gray-900/50">
+                  <div className="text-gray-400 mb-4 border border-gray-700 rounded-lg p-3 app-description">
+                    <p className="text-gray-400">{app.description}</p>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="text-left text-gray-400">
+                          <th className="p-3">Test Name</th>
+                          <th className="p-3">File</th>
+                          <th className="p-3">Created At</th>
+                          <th className="p-3">Status</th>
+                          <th className="p-3">Oracles Selected</th>
+                          <th className="p-3">Notes</th>
+                          <th className="p-3">Results</th>
+                          <th className="p-3">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-gray-400">
+                        {app.mockTests.map((test, index) => (
+                          <tr
+                            key={test._id}
+                            className={index === 0 ? "first-test-row" : ""}
+                          >
+                            {test.status === "pending" ? (
+                              // Pending test row with progress bar
+                              <td colSpan={8} className="p-3">
+                                <div className="flex items-center space-x-4 test-progress-bar">
+                                  <span className="text-yellow-600 w-1/4">
+                                    {test.testName}
+                                  </span>
+                                  <div className="w-3/4 bg-gray-700 rounded-full h-2.5">
+                                    <div
+                                      className="bg-yellow-600 h-2.5 rounded-full"
+                                      style={{
+                                        width: `${
+                                          testProgress[test._id] || 0
+                                        }%`,
+                                      }}
+                                    ></div>
+                                  </div>
+                                  <span className="text-gray-400 w-1/12">
+                                    {testProgress[test._id] || 0}%
+                                  </span>
+                                </div>
+                              </td>
+                            ) : (
+                              // Completed test row render
+                              <>
+                                <td className="p-3">{test.testName}</td>
+                                <td className="p-3">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-400">
+                                      {test.fileName}
+                                    </span>
+                                    <button
+                                      className="first-file-download-button text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20 opacity-50 cursor-not-allowed"
+                                      title="Download File"
+                                    >
+                                      <Download size={16} />
+                                    </button>
+                                  </div>
+                                </td>
+                                <td className="p-3">{test.createdAt}</td>
+                                <td className="p-3 test-status">
+                                  <span
+                                    className={`px-3 py-1.5 rounded-full text-xs ${getStatusColorClass(
+                                      test.status
+                                    )}`}
+                                  >
+                                    {test.status}
+                                  </span>
+                                </td>
+                                <td className="p-3">
+                                  <span
+                                    className={`px-3 py-1.5 ${getOracleColorClass(
+                                      test.oracleSelected
+                                    )} rounded-full text-xs w-44 oracle-selected`}
+                                  >
+                                    {test.oracleSelected}
+                                  </span>
+                                </td>
+                                <td className="p-3">
+                                  <button className="notes-edit-button text-violet-500 hover:text-violet-400 transition-colors opacity-50 cursor-not-allowed">
+                                    View/Edit
+                                  </button>
+                                </td>
+                                <td className="p-3">
+                                  <div className="flex items-center gap-2">
+                                    <button className="results-view-icon text-violet-500 hover:text-violet-400 transition-colors opacity-50 cursor-not-allowed">
+                                      View
+                                    </button>
+                                    <button
+                                      className="results-download-icon text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20 opacity-50 cursor-not-allowed"
+                                      title="Download Results"
+                                    >
+                                      <Download size={16} />
+                                    </button>
+                                  </div>
+                                </td>
+                                <td className="p-3">
+                                  <button
+                                    className="test-delete-icon text-red-500 hover:text-red-400 transition-colors p-1 rounded-full opacity-50 cursor-not-allowed"
+                                    title="Delete Test"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
           ))}
         </div>
       </div>
