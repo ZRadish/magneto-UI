@@ -54,7 +54,6 @@ const AppRow: React.FC<{
   };
   const appNameInputRef = useRef<HTMLInputElement>(null);
 
-
   useEffect(() => {
     const fetchTests = async () => {
       if (!isExpanded) return;
@@ -158,55 +157,61 @@ const AppRow: React.FC<{
   //   }
   // };
 
-  const handleInputFileDownload = async (e: React.MouseEvent, test: AppTest) => {
+  const handleInputFileDownload = async (
+    e: React.MouseEvent,
+    test: AppTest
+  ) => {
     e.stopPropagation(); // Prevent row click event
-    
+
     const token = localStorage.getItem("authToken");
     if (!token) {
-        alert("Authentication token not found");
-        return;
+      alert("Authentication token not found");
+      return;
     }
 
     if (!test.fileId) {
-        alert("No input file available for download");
-        return;
+      alert("No input file available for download");
+      return;
     }
 
     try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/test/input_download/${test.fileId}`, {
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error("Failed to download input file.");
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/test/input_download/${test.fileId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
+      );
 
-        // Convert response to Blob
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
+      if (!response.ok) {
+        throw new Error("Failed to download input file.");
+      }
 
-        // Create a temporary anchor element to trigger download
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = test.fileName || "input_file.zip"; // Set filename
-        document.body.appendChild(a);
-        a.click();
+      // Convert response to Blob
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
 
-        // Cleanup
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+      // Create a temporary anchor element to trigger download
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = test.fileName || "input_file.zip"; // Set filename
+      document.body.appendChild(a);
+      a.click();
+
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error) {
-        console.error("Error downloading input file:", error);
-        alert("Failed to download input file. Please try again.");
+      console.error("Error downloading input file:", error);
+      alert("Failed to download input file. Please try again.");
     }
-};
+  };
 
   const handleResultsDownload = async (e: React.MouseEvent, test: AppTest) => {
     e.stopPropagation();
-    
+
     const token = localStorage.getItem("authToken");
     if (!token) {
       alert("Authentication token not found");
@@ -214,12 +219,15 @@ const AppRow: React.FC<{
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/test/result_download/${test._id}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/test/result_download/${test._id}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to download results.");
@@ -243,12 +251,11 @@ const AppRow: React.FC<{
       console.error("Error downloading results:", error);
       alert("Failed to download results. Please try again.");
     }
-};
-
+  };
 
   const openModal = async (type: "notes" | "results", testId: string) => {
     setActiveModal({ type, testId });
-  
+
     if (type === "notes") {
       const test = tests.find((t) => t._id === testId);
       setEditableNotes(test?.notes || "");
@@ -258,23 +265,26 @@ const AppRow: React.FC<{
         alert("Authentication token not found");
         return;
       }
-  
+
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/test/result_download/${testId}`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-  
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/test/result_download/${testId}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
         if (!response.ok) {
           throw new Error("Failed to fetch PDF.");
         }
-  
+
         // Convert response to Blob and create a URL
         const blob = await response.blob();
         const pdfUrl = URL.createObjectURL(blob);
-  
+
         // Set modal content as the PDF URL
         setModalContent(pdfUrl);
       } catch (error) {
@@ -283,17 +293,16 @@ const AppRow: React.FC<{
       }
     }
   };
-  
 
   const handleSaveNotes = async () => {
     if (!activeModal?.testId) return;
-  
+
     const token = localStorage.getItem("authToken");
     if (!token) {
       alert("Authentication token not found");
       return;
     }
-  
+
     try {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/test/${activeModal.testId}/notes`,
@@ -306,34 +315,34 @@ const AppRow: React.FC<{
           body: JSON.stringify({ notes: editableNotes }),
         }
       );
-  
+
       if (!response.ok) {
         throw new Error(`Failed to update notes: ${response.status}`);
       }
-  
+
       const updatedTest = await response.json();
-  
+
       onUpdateNotes(activeModal.testId, updatedTest.test.notes);
-  
+
       setActiveModal(null); // Close modal
     } catch (error) {
       console.error("Error updating notes:", error);
       alert("Failed to update notes. Please try again.");
     }
-  };  
-  
+  };
+
   const handleSaveAppName = async () => {
     if (!newAppName.trim()) {
       alert("App name cannot be empty.");
       return;
     }
-  
+
     const token = localStorage.getItem("authToken");
     if (!token) {
       alert("Authentication token not found.");
       return;
     }
-  
+
     try {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/app/${app.id}/name`,
@@ -346,11 +355,11 @@ const AppRow: React.FC<{
           body: JSON.stringify({ appName: newAppName }),
         }
       );
-  
+
       if (!response.ok) {
         throw new Error(`Failed to update app name: ${response.status}`);
       }
-  
+
       const updatedApp = await response.json();
       onUpdateAppName(app.id, updatedApp.app.appName);
       setIsEditing(false); // Exit edit mode after saving
@@ -375,14 +384,17 @@ const AppRow: React.FC<{
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/app/${app.id}/description`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ description: newDescription.trim() }), // Allow empty string
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/app/${app.id}/description`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ description: newDescription.trim() }), // Allow empty string
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to update app description: ${response.status}`);
@@ -394,7 +406,9 @@ const AppRow: React.FC<{
       setIsEditingDescription(false);
     } catch (error) {
       console.error("Error updating app description:", error);
-      alert("Failed to update app description. Please provide a non-empty description of the app.");
+      alert(
+        "Failed to update app description. Please provide a non-empty description of the app."
+      );
     }
   };
 
@@ -435,47 +449,61 @@ const AppRow: React.FC<{
 
   return (
     <div className="border border-violet-900 rounded-lg mb-4 hover:border-violet-700 transition-colors hover:shadow-lg hover:shadow-violet-900/50">
-      <div className="flex items-center p-4 cursor-pointer bg-gray-900" onClick={() => setIsExpanded(!isExpanded)}>
-          <Folder className="mr-2 text-violet-500" size={20} />
+      <div
+        className="flex items-center p-4 cursor-pointer bg-gray-900"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <Folder className="mr-2 text-violet-500" size={20} />
 
-          {/* Editable App Name */}
-          {isEditing ? (
-            <input
-              ref={appNameInputRef} // Auto-focus when editing
-              type="text"
-              value={newAppName}
-              onChange={(e) => setNewAppName(e.target.value)}
-              onClick={(e) => e.stopPropagation()} // Prevent toggling expansion while editing
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleSaveAppName(); // Save on Enter key
-                }
-              }}
-              className="flex-grow text-gray-400 bg-gray-800 border border-violet-700 rounded px-2 py-1 focus:outline-none"
-            />
-          ) : (
-            <span className="flex-grow text-gray-400">{app.name}</span>
-          )}
+        {/* Editable App Name */}
+        {isEditing ? (
+          <input
+            ref={appNameInputRef} // Auto-focus when editing
+            type="text"
+            value={newAppName}
+            onChange={(e) => setNewAppName(e.target.value)}
+            onClick={(e) => e.stopPropagation()} // Prevent toggling expansion while editing
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleSaveAppName(); // Save on Enter key
+              }
+            }}
+            className="flex-grow text-gray-400 bg-gray-800 border border-violet-700 rounded px-2 py-1 focus:outline-none"
+          />
+        ) : (
+          <span className="flex-grow text-gray-400">{app.name}</span>
+        )}
 
-          {/* Edit & Save Buttons */}
-          {isEditing ? (
-            <button onClick={(e) => { e.stopPropagation(); handleSaveAppName(); }} className="ml-2 text-green-500 hover:text-green-400">
-              <Save size={20} />
-            </button>
-          ) : (
-            <button onClick={(e) => { e.stopPropagation(); handleEditClick(); }} className="ml-2 text-violet-500 hover:text-violet-400">
-              <Edit size={20} />
-            </button>
-          )}
+        {/* Edit & Save Buttons */}
+        {isEditing ? (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSaveAppName();
+            }}
+            className="ml-2 text-green-500 hover:text-green-400"
+          >
+            <Save size={20} />
+          </button>
+        ) : (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEditClick();
+            }}
+            className="ml-2 text-violet-500 hover:text-violet-400"
+          >
+            <Edit size={20} />
+          </button>
+        )}
 
-          {isExpanded ? (
-            <ChevronDown size={20} className="text-violet-500" />
-          ) : (
-            <ChevronRight size={20} className="text-violet-500" />
-          )}
+        {isExpanded ? (
+          <ChevronDown size={20} className="text-violet-500" />
+        ) : (
+          <ChevronRight size={20} className="text-violet-500" />
+        )}
       </div>
-
 
       {isExpanded && (
         <div className="p-4 bg-gray-900/50">
@@ -493,7 +521,10 @@ const AppRow: React.FC<{
                 className="w-full text-gray-400 bg-gray-800 border border-violet-700 rounded px-2 py-1 focus:outline-none"
               />
             ) : (
-              <p onClick={handleEditDescription} className="cursor-pointer text-gray-400">
+              <p
+                onClick={handleEditDescription}
+                className="cursor-pointer text-gray-400"
+              >
                 {app.description}
               </p>
             )}
@@ -527,6 +558,7 @@ const AppRow: React.FC<{
                     <th className="p-3">Oracles Selected</th>
                     <th className="p-3">Notes</th>
                     <th className="p-3">Results</th>
+                    <th className="p-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="text-gray-400">
@@ -572,7 +604,7 @@ const AppRow: React.FC<{
                               const colorClass =
                                 {
                                   "Theme Check":
-                                    "bg-green-900/20 text-center text-green-400",
+                                    "bg-orange-900/20 text-center text-orange-400",
                                   "Back Button":
                                     "bg-blue-900/20 text-center text-blue-400",
                                   "Language Detection":
@@ -580,7 +612,7 @@ const AppRow: React.FC<{
                                   "User Input":
                                     "bg-yellow-900/20 text-center text-yellow-400",
                                 }[test.oracleSelected] ||
-                                "bg-violet-900/20 text-violet-400";
+                                "bg-violet-900/20 text-center text-violet-400";
 
                               return (
                                 <span
@@ -640,21 +672,20 @@ const AppRow: React.FC<{
 
       {activeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-        <div className="bg-gray-900 p-6 rounded-lg max-w-2xl w-full border border-violet-900">
-          <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
-            {activeModal.type === "notes" ? "Notes" : "Results"}
-          </h2>
-      
-          <div className="max-h-[80vh] overflow-y-auto">
-            {activeModal.type === "notes" ? (
-              <textarea
-                className="w-full h-64 bg-gray-800 text-gray-300 p-4 rounded-lg border border-violet-900 focus:border-violet-700 focus:outline-none resize-none"
-                value={editableNotes}
-                onChange={(e) => setEditableNotes(e.target.value)}
-                placeholder="Enter your notes here..."
-              />
-            ) : (
-              // Embed the PDF inside an iframe
+          <div className="bg-gray-900 p-6 rounded-lg max-w-2xl w-full border border-violet-900">
+            <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
+              {activeModal.type === "notes" ? "Notes" : "Results"}
+            </h2>
+
+            <div className="max-h-[80vh] overflow-y-auto">
+              {activeModal.type === "notes" ? (
+                <textarea
+                  className="w-full h-64 bg-gray-800 text-gray-300 p-4 rounded-lg border border-violet-900 focus:border-violet-700 focus:outline-none resize-none"
+                  value={editableNotes}
+                  onChange={(e) => setEditableNotes(e.target.value)}
+                  placeholder="Enter your notes here..."
+                />
+              ) : // Embed the PDF inside an iframe
               modalContent ? (
                 <iframe
                   src={modalContent}
@@ -663,30 +694,28 @@ const AppRow: React.FC<{
                 />
               ) : (
                 <p className="text-gray-400 text-center">Loading PDF...</p>
-              )
-            )}
-          </div>
-      
-          <div className="mt-4 flex justify-end gap-4">
-            {activeModal.type === "notes" && (
+              )}
+            </div>
+
+            <div className="mt-4 flex justify-end gap-4">
+              {activeModal.type === "notes" && (
+                <button
+                  className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+                  onClick={handleSaveNotes}
+                >
+                  <Save size={16} />
+                  Save Notes
+                </button>
+              )}
               <button
-                className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
-                onClick={handleSaveNotes}
+                className="px-4 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
+                onClick={() => setActiveModal(null)}
               >
-                <Save size={16} />
-                Save Notes
+                Close
               </button>
-            )}
-            <button
-              className="px-4 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
-              onClick={() => setActiveModal(null)}
-            >
-              Close
-            </button>
+            </div>
           </div>
         </div>
-      </div>
-      
       )}
     </div>
   );
@@ -775,10 +804,6 @@ const Dashboard: React.FC = () => {
 
   const handleOpenRunTestModal = () => {
     setIsRunTestModalOpen(true);
-  };
-
-  const handleCloseRunTestModal = () => {
-    setIsRunTestModalOpen(false);
   };
 
   const handleAppSelect = (appId: string) => {
@@ -923,15 +948,19 @@ const Dashboard: React.FC = () => {
 
   const handleUpdateAppName = (appId: string, newName: string) => {
     setApps((prevApps) =>
-      prevApps.map((app) => (app.id === appId ? { ...app, name: newName } : app))
+      prevApps.map((app) =>
+        app.id === appId ? { ...app, name: newName } : app
+      )
     );
   };
 
   const handleUpdateDescription = (appId: string, newDescription: string) => {
     setApps((prevApps) =>
-      prevApps.map((app) => (app.id === appId ? { ...app, description: newDescription } : app))
+      prevApps.map((app) =>
+        app.id === appId ? { ...app, description: newDescription } : app
+      )
     );
-  };  
+  };
 
   const handleNextStep = async () => {
     if (currentStep === "select-app" && selectedAppId) {
@@ -1153,7 +1182,12 @@ const Dashboard: React.FC = () => {
         >
           {apps.map((app) => (
             <div key={app.id}>
-              <AppRow app={app} onUpdateNotes={handleUpdateNotes} onUpdateAppName={handleUpdateAppName} onUpdateDescription={handleUpdateDescription} />
+              <AppRow
+                app={app}
+                onUpdateNotes={handleUpdateNotes}
+                onUpdateAppName={handleUpdateAppName}
+                onUpdateDescription={handleUpdateDescription}
+              />
             </div>
           ))}
         </div>
