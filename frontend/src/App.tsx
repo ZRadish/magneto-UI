@@ -12,8 +12,10 @@ import GuidancePage from "./pages/GuidancePage";
 import TutorialPage from "./pages/TRTutorial";
 import ProfilePage from "./pages/ProfilePage";
 import FAQPage from "./pages/FAQ";
-
+import ProtectedRoute from "./components/ProtectedRoute";
 const App = () => {
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const isAuthenticated = !!user; // Check if user is authenticated
   return (
     <>
       <BrowserRouter>
@@ -30,6 +32,11 @@ const App = () => {
           <Route path="/tutorial" element={<TutorialPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/faq" element={<FAQPage />} />
+
+          <Route element={<ProtectedRoute isAuthenticated={isAuthenticated} />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+          </Route>
         </Routes>
       </BrowserRouter>
     </>

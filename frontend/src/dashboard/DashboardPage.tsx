@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Play, Plus, Trash2 } from "lucide-react";
+import { Play, Plus } from "lucide-react";
 import { Folder, ChevronRight } from "lucide-react";
 import SideBar from "../components/SideBar";
 import AppRow from "./AppRow";
@@ -366,7 +366,7 @@ const Dashboard: React.FC = () => {
                     <span className="flex-grow text-gray-400">{app.name}</span>
                     <ChevronRight size={20} className="text-violet-500" />
                   </div>
-                  <button
+                  {/*<button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleOpenDeleteModal(app.id);
@@ -374,7 +374,7 @@ const Dashboard: React.FC = () => {
                     className="absolute top-4 right-4 px-3 py-2 bg-red-600 text-white rounded-full hover:opacity-80 transition-opacity"
                   >
                     <Trash2 size={16} />
-                  </button>
+                  </button>*/}
                 </div>
               ))}
             </div>
@@ -471,6 +471,7 @@ const Dashboard: React.FC = () => {
                 onUpdateNotes={handleUpdateNotes}
                 onUpdateAppName={handleUpdateAppName}
                 onUpdateDescription={handleUpdateDescription}
+                handleDeleteApp={handleOpenDeleteModal}
               />
             </div>
           ))}
