@@ -10,5 +10,6 @@ router.delete('/:testId', testController.deleteTest); // Delete test by ID
 router.patch('/:testId/notes', authenticateToken, testController.updateTestNotes); // Update test notes by testId
 router.get('/result_download/:testId', authenticateToken, testController.downloadTestResult); //download result pdf file
 router.get('/input_download/:fileId', authenticateToken, testController.downloadTestInput); //download input zip file
+router.patch('/:testId/name', authenticateToken, testController.updateTestName); // Update test name by testId
 
 export default router;

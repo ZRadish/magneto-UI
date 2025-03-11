@@ -108,3 +108,16 @@ export const downloadTestInput = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+export const updateTestName = async (req, res) => {
+  const { testId } = req.params;
+  const { testName } = req.body;
+
+  try {
+    const updatedTest = await testService.updateTestNameService(testId, testName);
+    res.status(200).json({ success: true, test: updatedTest });
+  } catch (error) {
+    console.error('[CONTROLLER] Error updating test name:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
