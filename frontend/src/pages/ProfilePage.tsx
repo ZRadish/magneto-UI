@@ -1,29 +1,27 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Save, Edit, Lock, Trash } from "lucide-react";
+import { Edit, Trash } from "lucide-react";
 import SideBar from "../components/SideBar";
-
-interface UserProfile {
-  name: string;
-  email: string;
-  notes: string;
-}
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
-  const [userProfile, setUserProfile] = useState<UserProfile>({
-    name: "John Doe",
-    email: "johndoe@example.com",
-    notes: "This is a user profile page.",
+  const [userProfile, setUserProfile] = useState<{ name: string; email: string }>({
+    name: "",
+    email: "",
   });
-  const [isEditing, setIsEditing] = useState(false);
-  const [editableNotes, setEditableNotes] = useState(userProfile.notes);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
-  const handleSaveProfile = () => {
-    setUserProfile((prev) => ({ ...prev, notes: editableNotes }));
-    setIsEditing(false);
-  };
+  useEffect(() => {
+    // Retrieve user details from local storage
+    const storedUsernameFirst = localStorage.getItem("firstName");
+    const storedUsernameLast = localStorage.getItem("lastName");
+    const storedEmail = localStorage.getItem("email");
+
+    setUserProfile({
+      name: `${storedUsernameFirst || "Guest"} ${storedUsernameLast || "User"}`,
+      email: storedEmail || "No email available",
+    });
+  }, []);
 
   const handleDeleteAccount = async () => {
     const token = localStorage.getItem("authToken");
@@ -33,16 +31,13 @@ const ProfilePage: React.FC = () => {
     }
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/user/delete`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/user/delete`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (!response.ok) {
         throw new Error(`Failed to delete account: ${response.status}`);
@@ -72,7 +67,6 @@ const ProfilePage: React.FC = () => {
           </div>
           <button
             id="edit-profile-btn"
-            onClick={() => setIsEditing(true)}
             className="px-6 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2"
           >
             <Edit size={20} />
@@ -82,9 +76,7 @@ const ProfilePage: React.FC = () => {
 
         <div className="space-y-4">
           <div className="bg-gray-900 p-6 rounded-lg border border-violet-900">
-            <h3 className="text-xl font-semibold text-gray-400">
-              Personal Info
-            </h3>
+            <h3 className="text-xl font-semibold text-gray-400">Personal Info</h3>
             <div className="space-y-2 mt-4">
               <p className="text-gray-400">
                 <strong>Name: </strong> {userProfile.name}
@@ -94,35 +86,6 @@ const ProfilePage: React.FC = () => {
               </p>
             </div>
           </div>
-
-          <div className="bg-gray-900 p-6 rounded-lg border border-violet-900 mt-4">
-            <h3 className="text-xl font-semibold text-gray-400">Notes</h3>
-            <div className="mt-4">
-              {isEditing ? (
-                <textarea
-                  id="profile-notes"
-                  className="w-full h-40 bg-gray-800 text-gray-300 p-4 rounded-lg border border-violet-900 focus:border-violet-700 focus:outline-none resize-none"
-                  value={editableNotes}
-                  onChange={(e) => setEditableNotes(e.target.value)}
-                />
-              ) : (
-                <p className="text-gray-400">{userProfile.notes}</p>
-              )}
-            </div>
-          </div>
-
-          {isEditing && (
-            <div className="mt-4 flex justify-end gap-4">
-              <button
-                id="save-profile-btn"
-                className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
-                onClick={handleSaveProfile}
-              >
-                <Save size={16} />
-                Save Profile
-              </button>
-            </div>
-          )}
 
           <div className="mt-8 flex justify-center gap-4">
             <button
@@ -135,6 +98,7 @@ const ProfilePage: React.FC = () => {
           </div>
         </div>
 
+        {/* Delete Confirmation Modal */}
         {showDeleteConfirmation && (
           <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="bg-gray-900 p-6 rounded-lg max-w-md w-full border border-violet-900">

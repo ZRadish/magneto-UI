@@ -26,7 +26,10 @@ const LoginPage = () => {
       } else {
         localStorage.setItem("authToken", token); // Store token
         localStorage.setItem("UserId", user.id); // Store user ID (optional)
-        localStorage.setItem("username", user.firstName); // Store username (optional)
+        localStorage.setItem("firstName", user.firstName); // Store username (optional)
+        localStorage.setItem("email", user.email); // Store email (optional)
+        localStorage.setItem("lastName", user.lastName); // Store role (optional)
+
 
         console.log("Token stored:", token);
         navigate("/dashboard");
