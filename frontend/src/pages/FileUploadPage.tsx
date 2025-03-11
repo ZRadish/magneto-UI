@@ -24,7 +24,19 @@ const FileUploadPage = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
     if (selectedFiles) {
-      setFiles(selectedFiles);
+      const validFiles = Array.from(selectedFiles).filter((file) =>
+        file.name.toLowerCase().endsWith(".zip")
+      );
+
+      if (validFiles.length !== selectedFiles.length) {
+        setMsg("Only ZIP files are allowed.");
+      } else {
+        setMsg(null);
+      }
+
+      setFiles(
+        validFiles.length > 0 ? (validFiles as unknown as FileList) : null
+      );
     }
   };
 
@@ -39,10 +51,21 @@ const FileUploadPage = () => {
     setDragOver(false);
     const droppedFiles = e.dataTransfer.files;
     if (droppedFiles) {
-      setFiles(droppedFiles);
+      const validFiles = Array.from(droppedFiles).filter((file) =>
+        file.name.toLowerCase().endsWith(".zip")
+      );
+
+      if (validFiles.length !== droppedFiles.length) {
+        setMsg("Only ZIP files are allowed.");
+      } else {
+        setMsg(null);
+      }
+
+      setFiles(
+        validFiles.length > 0 ? (validFiles as unknown as FileList) : null
+      );
     }
   };
-
   const runMagnetoTest = async (fileName: string) => {
     console.log("Raw Oracle Selection:", oracleSelection);
     if (!oracleSelection || !testId || !appId) {
@@ -164,8 +187,8 @@ const FileUploadPage = () => {
 
       // Run the Magneto test with the uploaded file ID
       console.log("here", fileName);
+      navigate(`/dashboard`, { state: { appId, testId, fileName } });
       await runMagnetoTest(fileName);
-      navigate("/dashboard", { state: { testId, fileName } });
     } catch (error) {
       setMsg("Upload or processing failed");
       if (axios.isAxiosError(error)) {
@@ -179,7 +202,7 @@ const FileUploadPage = () => {
   const hasFiles = files && files.length > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-emerald-900 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 to-gray-950 flex items-center justify-center p-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -189,10 +212,10 @@ const FileUploadPage = () => {
         <div className="bg-gray-800 bg-opacity-50 backdrop-blur-xl rounded-xl shadow-xl overflow-hidden">
           {/* Header */}
           <div className="p-6 border-b border-gray-700">
-            <h1 className="text-3xl font-bold text-center bg-gradient-to-r from-green-400 to-emerald-500 text-transparent bg-clip-text">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent mb-2">
               MAGNETO Testing Interface
             </h1>
-            <p className="text-gray-400 text-center mt-2">
+            <p className="text-gray-200 text-center mt-2">
               Upload files and run {oracleSelection} tests
             </p>
           </div>
@@ -204,7 +227,7 @@ const FileUploadPage = () => {
                 ${
                   dragOver
                     ? "border-green-500 bg-opacity-10 bg-green-500"
-                    : "border-gray-600"
+                    : "border-gray-200"
                 }
                 ${hasFiles ? "bg-opacity-10 bg-green-500" : ""}`}
               onDragOver={(e) => {
@@ -283,7 +306,7 @@ const FileUploadPage = () => {
               <div className="p-4 bg-red-900/50 border border-red-800 rounded-lg flex items-center space-x-2">
                 <AlertCircle className="h-4 w-4 text-red-400" />
                 <p className="text-white text-sm">
-                  Please upload at least one file.
+                  Please upload a single ZIP file. Only ZIP format is accepted.
                 </p>
               </div>
             )}
@@ -303,7 +326,7 @@ const FileUploadPage = () => {
                 ${
                   !hasFiles || isProcessing
                     ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                    : "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700"
+                    : "bg-gradient-to-r bg-gradient-to-r from-red-400 to-purple-800 text-white hover:bg-gradient-to-r from-red-400 to-purple-800"
                 } transition-all duration-200`}
               onClick={uploadFile}
               disabled={!hasFiles || isProcessing}
