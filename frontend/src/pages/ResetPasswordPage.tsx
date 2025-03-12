@@ -44,6 +44,11 @@ const ResetPasswordPage = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    if (!password.trim() || !confirmPassword.trim()) {
+      setError("Both password fields are required.");
+      return;
+  }
+  
     if (!isPasswordStrong) {
       setError(
         "Password must fulfill all requirements to reset your password."
