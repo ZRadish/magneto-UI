@@ -51,6 +51,10 @@ const AppRow: React.FC<{
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [newDescription, setNewDescription] = useState(app.description);
   const descriptionInputRef = useRef<HTMLInputElement>(null);
+  const [editingTestId, setEditingTestId] = useState<string | null>(null);
+  const [editingTestName, setEditingTestName] = useState<string>("");
+  const testNameInputRef = useRef<HTMLInputElement>(null);
+
   const handleEditClick = () => {
     setIsEditing(true);
     setTimeout(() => {
@@ -329,6 +333,12 @@ const AppRow: React.FC<{
 
       onUpdateNotes(activeModal.testId, updatedTest.test.notes);
 
+      setTests((prevTests) =>
+        prevTests.map((test) =>
+            test._id === activeModal.testId ? { ...test, notes: updatedTest.test.notes } : test
+        )
+      );
+
       setActiveModal(null); // Close modal
     } catch (error) {
       console.error("Error updating notes:", error);
@@ -452,6 +462,64 @@ const AppRow: React.FC<{
     }
   };
 
+  const handleEditTestName = (testId: string) => {
+    const testToEdit = tests.find((test) => test._id === testId);
+    if (testToEdit) {
+      setEditingTestId(testId);
+      setEditingTestName(testToEdit.testName);
+
+      setTimeout(() => {
+        testNameInputRef.current?.focus();
+      }, 0);
+    }
+  };
+  
+  
+  
+  const handleSaveTestName = async (testId: string) => {
+    if (!editingTestName.trim()) {
+      alert("Test name cannot be empty.");
+      return;
+    }
+  
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      alert("Authentication token not found.");
+      return;
+    }
+  
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/test/${testId}/name`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ testName: editingTestName }),
+        }
+      );
+  
+      if (!response.ok) {
+        throw new Error(`Failed to update test name: ${response.status}`);
+      }
+  
+      const updatedTest = await response.json();
+      setTests((prevTests) =>
+        prevTests.map((test) =>
+          test._id === testId ? { ...test, testName: updatedTest.test.testName } : test
+        )
+      );
+  
+      setEditingTestId(null);
+    } catch (error) {
+      console.error("Error updating test name:", error);
+      alert("Failed to update test name. Please try again.");
+    }
+  };
+  
+
   // function handleOpenDeleteModal(id: string) {
   //   throw new Error("Function not implemented.");
   // }
@@ -526,7 +594,7 @@ const AppRow: React.FC<{
       {isExpanded && (
         <div className="p-6 bg-gray-900/50 rounded-b-2xl">
           {/* Description with larger text and rounded input */}
-          <div className="text-gray-400 mb-6 border border-gray-700 rounded-2xl p-4">
+          <div className="text-gray-400 mb-6 border border-gray-700 rounded-2xl p-4 flex items-center justify-between">
             {isEditingDescription ? (
               <input
                 ref={descriptionInputRef}
@@ -537,17 +605,33 @@ const AppRow: React.FC<{
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleSaveDescription();
                 }}
-                className="w-full text-lg text-gray-400 bg-gray-800 border border-violet-700 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="flex-grow text-lg text-gray-400 bg-gray-800 border border-violet-700 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
               />
             ) : (
               <p
                 onClick={handleEditDescription}
-                className="cursor-pointer text-lg text-gray-400"
+                className="flex-grow cursor-pointer text-lg text-gray-400"
               >
                 {app.description}
               </p>
             )}
+
+            {/* Show Save when editing, Edit when not editing */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isEditingDescription) {
+                  handleSaveDescription();
+                } else {
+                  handleEditDescription();
+                }
+              }}
+              className="ml-2 text-violet-500 hover:text-violet-400 transition-colors"
+            >
+              {isEditingDescription ? <Save size={20} /> : <Edit size={20} />}
+            </button>
           </div>
+
 
           {/* Test Table with Rounded Rows */}
           {!isLoading && !error && tests.length > 0 && (
@@ -571,7 +655,22 @@ const AppRow: React.FC<{
                       key={test._id}
                       className="hover:bg-gray-800/50 transition-colors rounded-2xl"
                     >
-                      <td className="p-3 text-base">{test.testName}</td>
+                      <td className="p-3 text-base w-[150px]">
+                      {editingTestId === test._id ? (
+                        <input
+                          ref={testNameInputRef} // Attach ref here
+                          type="text"
+                          value={editingTestName}
+                          onChange={(e) => setEditingTestName(e.target.value)}
+                          className="bg-transparent border border-violet-700 rounded px-2 py-1 text-gray-400 w-full focus:outline-none"
+                          onBlur={() => handleSaveTestName(test._id)}
+                          onKeyDown={(e) => e.key === "Enter" && handleSaveTestName(test._id)}
+                        />
+                      ) : (
+                        test.testName
+                      )}
+
+                      </td>
                       <td className="p-3">
                         {test.fileId ? (
                           <div className="flex items-center gap-2">
@@ -658,15 +757,22 @@ const AppRow: React.FC<{
                           )}
                         </div>
                       </td>
-                      <td className="p-3">
-                        <button
-                          className="text-red-500 hover:text-red-400 transition-colors p-1 rounded-full"
-                          onClick={() => handleDeleteTest(test._id)}
-                          title="Delete Test"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </td>{" "}
+                      <td className="p-3 flex items-center gap-3">
+                      <button
+                        className="text-violet-500 hover:text-violet-400 transition-colors"
+                        onClick={() => handleEditTestName(test._id)}
+                      >
+                        {editingTestId === test._id ? <Save size={16} /> : <Edit size={16} />}
+                      </button>
+
+                      <button
+                        className="text-red-500 hover:text-red-400 transition-colors p-1 rounded-full"
+                        onClick={() => handleDeleteTest(test._id)}
+                        title="Delete Test"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
                       {/* Add the delete button here */}
                     </tr>
                   ))}

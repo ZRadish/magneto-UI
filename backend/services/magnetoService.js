@@ -9,10 +9,7 @@ import AdmZip from 'adm-zip';
 
 // MongoDB connection
 const mongoURI = process.env.MONGODB_URI;
-const conn = mongoose.createConnection(mongoURI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+const conn = mongoose.createConnection(mongoURI);
 
 let gfsBucket;
 conn.once('open', () => {

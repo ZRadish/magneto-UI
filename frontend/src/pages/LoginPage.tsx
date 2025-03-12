@@ -21,8 +21,10 @@ const LoginPage = () => {
         return;
     }
 
+    const formattedEmail = email.toLowerCase();
+
     try {
-        const response = await api.post("/user/login", { email, password });
+        const response = await api.post("/user/login", { email: formattedEmail, password });
 
         console.log("API Response Data:", response.data);
 
@@ -36,7 +38,9 @@ const LoginPage = () => {
         } else {
             localStorage.setItem("authToken", token);
             localStorage.setItem("UserId", user.id);
-            localStorage.setItem("username", user.firstName);
+            localStorage.setItem("firstName", user.firstName);
+            localStorage.setItem("email", user.email);
+            localStorage.setItem("lastName", user.lastName);
 
             console.log("Token stored:", token);
             navigate("/dashboard");

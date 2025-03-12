@@ -47,13 +47,18 @@ const SignUpPage = () => {
         setError("Password must meet all strength requirements.");
         return;
     }
-
+  
+    // Format input values before sending
+    const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+    const formattedLastName = lastName.charAt(0).toUpperCase() + lastName.slice(1).toLowerCase();
+    const formattedEmail = email.toLowerCase();
+  
     try {
         // Step 1: Register the user
         const response = await api.post("/user/register", {
-            firstName,
-            lastName,
-            email,
+            firstName: formattedFirstName,
+            lastName: formattedLastName,
+            email: formattedEmail,
             password,
         });
 

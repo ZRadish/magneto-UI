@@ -17,4 +17,7 @@ router.post('/password/forgot', userController.forgotPassword); // Send forgot p
 // Reset password route
 router.post('/password/reset', userController.resetPassword); // Endpoint for resetting password
 
+router.patch('/update-name', authenticateToken, userController.updateUserName); // Update user name
+router.patch('/change-password', authenticateToken, userController.changePassword); // Change password
+
 export default router;
