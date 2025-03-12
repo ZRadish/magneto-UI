@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Play, Plus } from "lucide-react";
+import { Play, Plus, Search } from "lucide-react";
 import { Folder, ChevronRight } from "lucide-react";
 import SideBar from "../components/SideBar";
 import AppRow from "./AppRow";
@@ -17,6 +17,7 @@ const Dashboard: React.FC = () => {
   const [appToDelete, setAppToDelete] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [newAppName, setNewAppName] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Error state for validation
   const [errors, setErrors] = useState<{
@@ -374,7 +375,7 @@ const Dashboard: React.FC = () => {
           alert("Failed to create test. Please try again.");
         } else {
           console.error("An unknown error occurred:", error);
-          alert("Failed to create test. Please try again.");
+          alert("Failed to fetch apps. Please try again.");
         }
       }
 
@@ -388,6 +389,13 @@ const Dashboard: React.FC = () => {
       setErrors({}); // Clear any validation errors when going back
     }
   };
+
+  // Filter apps based on search query
+  const filteredApps = apps.filter(
+    (app) =>
+      app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      app.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const renderModalContent = () => {
     switch (currentStep) {
@@ -517,33 +525,60 @@ const Dashboard: React.FC = () => {
             </h1>
             <h2 className="text-xl font-semibold text-gray-400">Apps:</h2>
           </div>
-          <button
-            onClick={handleOpenRunTestModal}
-            className="px-6 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2"
-          >
-            <Play size={20} />
-            <span>Run Test</span>
-          </button>
+          <div className="flex items-center space-x-4">
+            {/* Run Test Button */}
+            <button
+              onClick={handleOpenRunTestModal}
+              className="px-6 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2"
+            >
+              <Play size={20} />
+              <span>Run Test</span>
+            </button>
+          </div>
         </div>
 
+        {/* Search Bar - Moved here above the AppRow container */}
+        <div className="relative mb-4">
+          <input
+            type="text"
+            placeholder="Search apps by name or description..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-4 py-2 pl-10 bg-gray-800 text-gray-200 rounded-lg border border-violet-900 focus:outline-none focus:border-purple-600"
+          />
+          <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+        </div>
+
+        {/* Reduced height of the container to prevent overflow */}
         <div
-          className="space-y-4 h-[calc(100vh-200px)] overflow-auto bg-gray-800 rounded-lg p-4 shadow-lg"
+          className="space-y-4 h-[calc(100vh-230px)] overflow-auto bg-gray-800 rounded-lg p-4 shadow-lg"
           style={{
             scrollbarWidth: "none",
             msOverflowStyle: "none",
           }}
         >
-          {apps.map((app) => (
-            <div key={app.id}>
-              <AppRow
-                app={app}
-                onUpdateNotes={handleUpdateNotes}
-                onUpdateAppName={handleUpdateAppName}
-                onUpdateDescription={handleUpdateDescription}
-                handleDeleteApp={handleOpenDeleteModal}
-              />
+          {apps.length === 0 ? (
+            <div className="text-center py-8 text-gray-400">
+              No apps have been created yet! Click the Run Test button to get
+              started ↗️!
             </div>
-          ))}
+          ) : filteredApps.length === 0 ? (
+            <div className="text-center py-8 text-gray-400">
+              Oops! No apps found 😭😥. Try searching something else.
+            </div>
+          ) : (
+            filteredApps.map((app) => (
+              <div key={app.id}>
+                <AppRow
+                  app={app}
+                  onUpdateNotes={handleUpdateNotes}
+                  onUpdateAppName={handleUpdateAppName}
+                  onUpdateDescription={handleUpdateDescription}
+                  handleDeleteApp={handleOpenDeleteModal}
+                />
+              </div>
+            ))
+          )}
         </div>
 
         {/* Run Test Modal */}
