@@ -6,7 +6,7 @@ import cors from 'cors';
 const app = express();
 
 app.use(cors({
-    origin: 'http://localhost:5173' // Allow requests from the frontend
+    origin: ['http://localhost:5173', 'http://167.71.98.114', 'http://magnetoui', 'https://magnetoui'] // Allow requests from the frontend
 }));
 
 // Middleware

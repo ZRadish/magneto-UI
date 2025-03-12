@@ -3,7 +3,7 @@ import axios, { AxiosProgressEvent } from "axios";
 import { motion } from "framer-motion";
 import { UploadCloud, Play, AlertCircle, X, Loader } from "lucide-react";
 import api from "../utils/api";
-import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 const FileUploadPage = () => {
   const [searchParams] = useSearchParams();
@@ -143,6 +143,7 @@ const FileUploadPage = () => {
     setProgress({ started: true, pc: 0 });
     try {
       const uploadResponse = await api.post("/files/upload", fd, {
+
         onUploadProgress: (progressEvent: AxiosProgressEvent) => {
           if (progressEvent.total) {
             const progressPercentage = Math.round(
@@ -154,12 +155,12 @@ const FileUploadPage = () => {
             }));
           }
         },
-        headers: {
+        headers: {  
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
         },
       });
-
+      console.log("Upload Response:", uploadResponse.data); // Use the response
       setMsg("Files uploaded successfully. Starting Magneto test...");
 
       // Run the Magneto test with the uploaded file ID

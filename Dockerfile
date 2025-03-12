@@ -1,7 +1,7 @@
 # Dockerfile
 
 # 1) Use Node.js 18 as the base image (Debian-based for compatibility)
-FROM --platform=linux/amd64 node:18-bullseye
+FROM --platform=linux/amd64 node:18-bullseye AS builder
 
 # 2) Install Python 3.9 & Poetry
 RUN apt-get update && apt-get install -y \

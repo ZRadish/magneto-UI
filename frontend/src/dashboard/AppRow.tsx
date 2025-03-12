@@ -452,9 +452,9 @@ const AppRow: React.FC<{
     }
   };
 
-  function handleOpenDeleteModal(id: string) {
-    throw new Error("Function not implemented.");
-  }
+  // function handleOpenDeleteModal(id: string) {
+  //   throw new Error("Function not implemented.");
+  // }
 
   return (
     <div className="border border-violet-900 rounded-2xl mb-6 hover:border-violet-700 transition-colors hover:shadow-xl hover:shadow-violet-900/50">

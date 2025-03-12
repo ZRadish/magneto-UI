@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Save, Edit, Lock, Trash } from "lucide-react";
+import { Save, Edit, Trash } from "lucide-react";
 import SideBar from "../components/SideBar";
 
 interface UserProfile {
