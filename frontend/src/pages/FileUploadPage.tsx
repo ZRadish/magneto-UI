@@ -3,7 +3,7 @@ import axios, { AxiosProgressEvent } from "axios";
 import { motion } from "framer-motion";
 import { UploadCloud, Play, AlertCircle, X, Loader } from "lucide-react";
 import api from "../utils/api";
-import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 const FileUploadPage = () => {
   const [searchParams] = useSearchParams();
@@ -165,7 +165,7 @@ const FileUploadPage = () => {
     //setProgress((prevState) => ({ ...prevState, started: true }));
     setProgress({ started: true, pc: 0 });
     try {
-      const uploadResponse = await api.post("/files/upload", fd, {
+      await api.post("/files/upload", fd, {
         onUploadProgress: (progressEvent: AxiosProgressEvent) => {
           if (progressEvent.total) {
             const progressPercentage = Math.round(
@@ -326,7 +326,7 @@ const FileUploadPage = () => {
                 ${
                   !hasFiles || isProcessing
                     ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                    : "bg-gradient-to-r bg-gradient-to-r from-red-400 to-purple-800 text-white hover:bg-gradient-to-r from-red-400 to-purple-800"
+                    : " text-white bg-gradient-to-r from-red-400 to-purple-800"
                 } transition-all duration-200`}
               onClick={uploadFile}
               disabled={!hasFiles || isProcessing}
