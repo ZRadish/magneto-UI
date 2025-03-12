@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Edit, Trash } from "lucide-react";
 import SideBar from "../components/SideBar";
@@ -10,6 +10,11 @@ const ProfilePage: React.FC = () => {
     email: "",
   });
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [firstName, setFirstName] = useState(localStorage.getItem("firstName") || "");
+  const [lastName, setLastName] = useState(localStorage.getItem("lastName") || "");
+  const firstNameInputRef = useRef<HTMLInputElement>(null);
+
 
   useEffect(() => {
     // Retrieve user details from local storage
@@ -52,6 +57,63 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  const handleEditName = () => {
+    setIsEditingName(true);
+    setTimeout(() => {
+        firstNameInputRef.current?.focus(); // Auto-focus on first name field
+    }, 0);
+  };
+
+  const handleSaveName = async () => {
+    if (!firstName.trim() || !lastName.trim()) {
+        alert("First and Last name cannot be empty.");
+        return;
+    }
+
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+        alert("Authentication token not found.");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/user/update-name`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to update name: ${response.status}`);
+        }
+
+        // Update local storage & UI
+        localStorage.setItem("firstName", firstName);
+        localStorage.setItem("lastName", lastName);
+        setUserProfile({ name: `${firstName} ${lastName}`, email: userProfile.email });
+
+        setIsEditingName(false);
+    } catch (error) {
+        console.error("Error updating name:", error);
+        alert("Failed to update name. Please try again.");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setFirstName(localStorage.getItem("firstName") || "");
+    setLastName(localStorage.getItem("lastName") || "");
+    setIsEditingName(false);
+  };
+
+
+
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 to-gray-950">
       <SideBar />
@@ -65,22 +127,61 @@ const ProfilePage: React.FC = () => {
               User Information:
             </h2>
           </div>
-          <button
-            id="edit-profile-btn"
-            className="px-6 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2"
-          >
-            <Edit size={20} />
-            <span>Edit Profile</span>
-          </button>
+          {isEditingName ? (
+              <div className="flex gap-3">
+                  <button
+                      onClick={handleSaveName}
+                      className="px-6 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
+                  >
+                      Save
+                  </button>
+                  <button
+                      onClick={handleCancelEdit}
+                      className="px-6 py-2 bg-gradient-to-r from-gray-600 to-gray-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
+                  >
+                      Cancel
+                  </button>
+              </div>
+          ) : (
+              <button
+                  id="edit-profile-btn"
+                  onClick={handleEditName}
+                  className="px-6 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2"
+              >
+                  <Edit size={20} />
+                  <span>Edit Profile</span>
+              </button>
+          )}
+
         </div>
 
         <div className="space-y-4">
           <div className="bg-gray-900 p-6 rounded-lg border border-violet-900">
             <h3 className="text-xl font-semibold text-gray-400">Personal Info</h3>
             <div className="space-y-2 mt-4">
-              <p className="text-gray-400">
-                <strong>Name: </strong> {userProfile.name}
-              </p>
+            <div className="flex items-center gap-2">
+                {isEditingName ? (
+                    <>
+                        <input
+                            ref={firstNameInputRef}
+                            type="text"
+                            value={firstName}
+                            onChange={(e) => setFirstName(e.target.value)}
+                            className="bg-gray-800 text-gray-300 border border-violet-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        />
+                        <input
+                            type="text"
+                            value={lastName}
+                            onChange={(e) => setLastName(e.target.value)}
+                            className="bg-gray-800 text-gray-300 border border-violet-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        />
+                    </>
+                ) : (
+                    <p className="text-gray-400">
+                        <strong>Name: </strong> {userProfile.name}
+                    </p>
+                )}
+            </div>
               <p className="text-gray-400">
                 <strong>Email: </strong> {userProfile.email}
               </p>
