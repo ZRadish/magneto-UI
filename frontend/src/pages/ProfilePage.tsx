@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Edit, Trash } from "lucide-react";
+import { Edit, Trash, Lock } from "lucide-react";
 import SideBar from "../components/SideBar";
 
 const ProfilePage: React.FC = () => {
@@ -14,6 +14,13 @@ const ProfilePage: React.FC = () => {
   const [firstName, setFirstName] = useState(localStorage.getItem("firstName") || "");
   const [lastName, setLastName] = useState(localStorage.getItem("lastName") || "");
   const firstNameInputRef = useRef<HTMLInputElement>(null);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+
 
 
   useEffect(() => {
@@ -116,6 +123,68 @@ const ProfilePage: React.FC = () => {
     setIsEditingName(false);
   };
 
+  const handleChangePassword = async () => {
+    setPasswordError("");
+    setPasswordSuccess("");
+  
+    if (!oldPassword || !newPassword || !confirmNewPassword) {
+      setPasswordError("All fields are required.");
+      return;
+    }
+  
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError("New password and confirmation do not match.");
+      return;
+    }
+  
+    if (newPassword.length < 6) {
+      setPasswordError("New password must be at least 6 characters long.");
+      return;
+    }
+  
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      setPasswordError("Authentication token not found.");
+      return;
+    }
+  
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/user/change-password`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          oldPassword,
+          newPassword,
+        }),
+      });
+  
+      if (!response.ok) {
+        if (response.status === 401) {
+          setPasswordError("Incorrect old password.");
+        } else {
+          throw new Error(`Failed to update password: ${response.status}`);
+        }
+        return;
+      }
+  
+      setPasswordSuccess("Password changed successfully!");
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+  
+      setTimeout(() => {
+        setShowChangePasswordModal(false);
+        setPasswordSuccess("");
+      }, 2000);
+    } catch (error) {
+      console.error("Error updating password:", error);
+      setPasswordError("Failed to update password. Please try again.");
+    }
+  };
+  
 
 
 
@@ -200,6 +269,13 @@ const ProfilePage: React.FC = () => {
 
           <div className="mt-8 flex justify-center gap-4">
             <button
+              onClick={() => setShowChangePasswordModal(true)}
+              className="px-6 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2"
+            >
+              <Lock size={20} />
+              <span>Change Password</span>
+            </button>
+            <button
               onClick={() => setShowDeleteConfirmation(true)}
               className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2"
             >
@@ -208,6 +284,59 @@ const ProfilePage: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {showChangePasswordModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-900 p-6 rounded-lg max-w-md w-full border border-violet-900">
+              <h2 className="text-xl font-bold bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent mb-4">
+                Change Password
+              </h2>
+
+              <div className="space-y-4">
+                <input
+                  type="password"
+                  placeholder="Old Password"
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  className="w-full p-2 bg-gray-800 text-gray-300 rounded-lg border border-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+                <input
+                  type="password"
+                  placeholder="New Password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full p-2 bg-gray-800 text-gray-300 rounded-lg border border-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+                <input
+                  type="password"
+                  placeholder="Confirm New Password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  className="w-full p-2 bg-gray-800 text-gray-300 rounded-lg border border-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+              </div>
+
+              {passwordError && <p className="text-sm text-red-500 mt-2">{passwordError}</p>}
+              {passwordSuccess && <p className="text-sm text-green-500 mt-2">{passwordSuccess}</p>}
+
+              <div className="flex justify-end gap-4 mt-4">
+                <button
+                  onClick={handleChangePassword}
+                  className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
+                >
+                  Change Password
+                </button>
+                <button
+                  onClick={() => setShowChangePasswordModal(false)}
+                  className="px-4 py-2 bg-gradient-to-r from-gray-600 to-gray-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
 
         {/* Delete Confirmation Modal */}
         {showDeleteConfirmation && (
