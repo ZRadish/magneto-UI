@@ -333,6 +333,12 @@ const AppRow: React.FC<{
 
       onUpdateNotes(activeModal.testId, updatedTest.test.notes);
 
+      setTests((prevTests) =>
+        prevTests.map((test) =>
+            test._id === activeModal.testId ? { ...test, notes: updatedTest.test.notes } : test
+        )
+      );
+
       setActiveModal(null); // Close modal
     } catch (error) {
       console.error("Error updating notes:", error);
