@@ -11,10 +11,7 @@ dotenv.config();
 
 // MongoDB connection
 const mongoURI = process.env.MONGODB_URI;
-const conn = mongoose.createConnection(mongoURI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+const conn = mongoose.createConnection(mongoURI);
 
 // Initialize GridFSBuckets for both uploaded files and results (PDFs)
 let gfsBucket, resultsBucket;
