@@ -182,6 +182,10 @@ const GuidancePage: React.FC = () => {
       content: "Use this icon to download the test results.",
     },
     {
+      target: ".test-edit-icon",
+      content: "This icon here allows you to edit the test name.",
+    },
+    {
       target: ".test-delete-icon",
       content: "This icon here allows you to delete the test.",
     },
@@ -402,7 +406,13 @@ const GuidancePage: React.FC = () => {
                                     </button>
                                   </div>
                                 </td>
-                                <td className="p-3">
+                                <td className="p-3 flex items-center gap-3 pl-5">
+                                  <button
+                                    className="test-edit-icon text-violet-500 hover:text-violet-400 transition-colors opacity-50"
+                                    title="Edit Test Name"
+                                  >
+                                    <Edit size={16} />
+                                  </button>
                                   <button
                                     className="test-delete-icon text-red-500 hover:text-red-400 transition-colors p-1 rounded-full opacity-50 cursor-not-allowed"
                                     title="Delete Test"

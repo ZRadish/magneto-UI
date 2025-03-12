@@ -335,7 +335,9 @@ const AppRow: React.FC<{
 
       setTests((prevTests) =>
         prevTests.map((test) =>
-            test._id === activeModal.testId ? { ...test, notes: updatedTest.test.notes } : test
+          test._id === activeModal.testId
+            ? { ...test, notes: updatedTest.test.notes }
+            : test
         )
       );
 
@@ -473,21 +475,19 @@ const AppRow: React.FC<{
       }, 0);
     }
   };
-  
-  
-  
+
   const handleSaveTestName = async (testId: string) => {
     if (!editingTestName.trim()) {
       alert("Test name cannot be empty.");
       return;
     }
-  
+
     const token = localStorage.getItem("authToken");
     if (!token) {
       alert("Authentication token not found.");
       return;
     }
-  
+
     try {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/test/${testId}/name`,
@@ -500,25 +500,26 @@ const AppRow: React.FC<{
           body: JSON.stringify({ testName: editingTestName }),
         }
       );
-  
+
       if (!response.ok) {
         throw new Error(`Failed to update test name: ${response.status}`);
       }
-  
+
       const updatedTest = await response.json();
       setTests((prevTests) =>
         prevTests.map((test) =>
-          test._id === testId ? { ...test, testName: updatedTest.test.testName } : test
+          test._id === testId
+            ? { ...test, testName: updatedTest.test.testName }
+            : test
         )
       );
-  
+
       setEditingTestId(null);
     } catch (error) {
       console.error("Error updating test name:", error);
       alert("Failed to update test name. Please try again.");
     }
   };
-  
 
   // function handleOpenDeleteModal(id: string) {
   //   throw new Error("Function not implemented.");
@@ -632,7 +633,6 @@ const AppRow: React.FC<{
             </button>
           </div>
 
-
           {/* Test Table with Rounded Rows */}
           {!isLoading && !error && tests.length > 0 && (
             <div className="overflow-x-auto">
@@ -656,20 +656,21 @@ const AppRow: React.FC<{
                       className="hover:bg-gray-800/50 transition-colors rounded-2xl"
                     >
                       <td className="p-3 text-base w-[150px]">
-                      {editingTestId === test._id ? (
-                        <input
-                          ref={testNameInputRef} // Attach ref here
-                          type="text"
-                          value={editingTestName}
-                          onChange={(e) => setEditingTestName(e.target.value)}
-                          className="bg-transparent border border-violet-700 rounded px-2 py-1 text-gray-400 w-full focus:outline-none"
-                          onBlur={() => handleSaveTestName(test._id)}
-                          onKeyDown={(e) => e.key === "Enter" && handleSaveTestName(test._id)}
-                        />
-                      ) : (
-                        test.testName
-                      )}
-
+                        {editingTestId === test._id ? (
+                          <input
+                            ref={testNameInputRef} // Attach ref here
+                            type="text"
+                            value={editingTestName}
+                            onChange={(e) => setEditingTestName(e.target.value)}
+                            className="bg-transparent border border-violet-700 rounded px-2 py-1 text-gray-400 w-full focus:outline-none"
+                            onBlur={() => handleSaveTestName(test._id)}
+                            onKeyDown={(e) =>
+                              e.key === "Enter" && handleSaveTestName(test._id)
+                            }
+                          />
+                        ) : (
+                          test.testName
+                        )}
                       </td>
                       <td className="p-3">
                         {test.fileId ? (
@@ -757,22 +758,26 @@ const AppRow: React.FC<{
                           )}
                         </div>
                       </td>
-                      <td className="p-3 flex items-center gap-3">
-                      <button
-                        className="text-violet-500 hover:text-violet-400 transition-colors"
-                        onClick={() => handleEditTestName(test._id)}
-                      >
-                        {editingTestId === test._id ? <Save size={16} /> : <Edit size={16} />}
-                      </button>
+                      <td className="p-3 flex items-center gap-3 pl-5">
+                        <button
+                          className="text-violet-500 hover:text-violet-400 transition-colors"
+                          onClick={() => handleEditTestName(test._id)}
+                        >
+                          {editingTestId === test._id ? (
+                            <Save size={16} />
+                          ) : (
+                            <Edit size={16} />
+                          )}
+                        </button>
 
-                      <button
-                        className="text-red-500 hover:text-red-400 transition-colors p-1 rounded-full"
-                        onClick={() => handleDeleteTest(test._id)}
-                        title="Delete Test"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
+                        <button
+                          className="text-red-500 hover:text-red-400 transition-colors p-1 rounded-full"
+                          onClick={() => handleDeleteTest(test._id)}
+                          title="Delete Test"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>{" "}
                       {/* Add the delete button here */}
                     </tr>
                   ))}
