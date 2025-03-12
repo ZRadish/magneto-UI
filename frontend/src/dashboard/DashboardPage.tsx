@@ -54,6 +54,11 @@ const Dashboard: React.FC = () => {
         return;
       }
 
+      if (!userId) {
+        navigate("/login");
+        return;
+      }
+
       try {
         const response = await fetch(
           `${import.meta.env.VITE_API_URL}/app/${userId}?nocache=${Date.now()}`,
