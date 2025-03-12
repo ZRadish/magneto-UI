@@ -28,53 +28,59 @@ const SignUpPage = () => {
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
-
+  
     if (!firstName || !lastName || !email || !password) {
       setError("All fields are required.");
       return;
     }
-
+  
     if (!PasswordValid) {
       setError("Password must meet all strength requirements.");
       return;
     }
-
+  
+    // Format input values before sending
+    const formattedFirstName =
+      firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+    const formattedLastName =
+      lastName.charAt(0).toUpperCase() + lastName.slice(1).toLowerCase();
+    const formattedEmail = email.toLowerCase();
+  
     try {
       // Step 1: Register the user
       const response = await api.post("/user/register", {
-        firstName,
-        lastName,
-        email,
+        firstName: formattedFirstName,
+        lastName: formattedLastName,
+        email: formattedEmail,
         password,
       });
-
-      // Log the API response for debugging
+  
       console.log("Register API Response:", response);
-
+  
       const data = response.data;
-
+  
       if (data.error) {
         setError(data.error);
         return;
       }
-
+  
       localStorage.setItem("userId", data.user.id);
-
-      // Log the user object to check if `id` exists
+  
       console.log("User Data:", data.user);
-
+  
       // Step 2: Trigger email verification
       await api.post("/user/email/verify", {
-        id: data.user.id, // Ensure `id` exists in the response
+        id: data.user.id,
         email: data.user.email,
       });
-
+  
       navigate("/verify-email");
     } catch (error) {
       console.error("Error during signup:", error);
       setError("An error occurred during registration.");
     }
   };
+  
 
   useEffect(() => {
     validatePassword(password); //Initial validation

@@ -14,23 +14,25 @@ const LoginPage = () => {
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Name:", email);
+    setError("");
+  
+    const formattedEmail = email.toLowerCase(); // Convert to lowercase before sending
+  
     try {
-      const response = await api.post("/user/login", { email, password });
-
+      const response = await api.post("/user/login", { email: formattedEmail, password });
+  
       console.log("API Response Data:", response.data);
-
-      const { user, token } = response.data; // Extract token and user
+  
+      const { user, token } = response.data;
       if (response.data.error) {
         setError(response.data.error);
       } else {
-        localStorage.setItem("authToken", token); // Store token
-        localStorage.setItem("UserId", user.id); // Store user ID (optional)
-        localStorage.setItem("firstName", user.firstName); // Store username (optional)
-        localStorage.setItem("email", user.email); // Store email (optional)
-        localStorage.setItem("lastName", user.lastName); // Store role (optional)
-
-
+        localStorage.setItem("authToken", token);
+        localStorage.setItem("UserId", user.id);
+        localStorage.setItem("firstName", user.firstName);
+        localStorage.setItem("email", user.email);
+        localStorage.setItem("lastName", user.lastName);
+  
         console.log("Token stored:", token);
         navigate("/dashboard");
       }
@@ -38,6 +40,7 @@ const LoginPage = () => {
       setError("An error occurred. Please try again.");
     }
   };
+  
 
   return (
     //bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity
