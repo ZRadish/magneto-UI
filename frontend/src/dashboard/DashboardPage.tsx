@@ -18,6 +18,13 @@ const Dashboard: React.FC = () => {
   const [description, setDescription] = useState("");
   const [newAppName, setNewAppName] = useState("");
 
+  // Error state for validation
+  const [errors, setErrors] = useState<{
+    testName?: string;
+    oracle?: string;
+    app?: string;
+  }>({});
+
   // New state for test creation
   const [testName, setTestName] = useState("");
   const [selectedOracle, setSelectedOracle] = useState<string>("");
@@ -87,28 +94,53 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const handleOpenRunTestModal = () => {
+    resetModalState(); // Reset all state when opening the modal
     setIsRunTestModalOpen(true);
+    // Reset errors when opening the modal
+    setErrors({});
+  };
+
+  // First, add a function to reset all modal-related state
+  const resetModalState = () => {
+    setCurrentStep("select-app");
+    setSelectedAppId(null);
+    resetTestState(); // This already resets test-specific state
+    setErrors({});
+  };
+
+  // Then modify the modal close function to call this reset
+  const handleCloseRunTestModal = () => {
+    setIsRunTestModalOpen(false);
+    resetModalState();
   };
 
   const handleAppSelect = (appId: string) => {
     setSelectedAppId(appId);
-    resetTestState(); // Clear all test-related state
-    setCurrentStep("create-test");
+    // Don't automatically go to the next step, just select the app
+    setErrors({}); // Clear any previous errors
   };
+
   const resetTestState = () => {
     setTestName("");
     setSelectedOracle("");
     setTestNotes("");
     setCreatedTestId(null);
+    setErrors({}); // Clear validation errors
+  };
+
+  const resetNewAppModalState = () => {
+    setNewAppName("");
+    setDescription("");
   };
 
   const handleOpenNewModal = () => {
+    resetNewAppModalState(); // Reset state when opening
     setIsNewModalOpen(true); // Open the new modal
-    resetTestState();
   };
 
   const handleCloseNewModal = () => {
     setIsNewModalOpen(false); // Close the new modal
+    resetNewAppModalState(); // Reset state when opening
   };
 
   const handleCreateApp = async () => {
@@ -246,7 +278,43 @@ const Dashboard: React.FC = () => {
     );
   };
 
+  // Validate inputs and set errors
+  const validateInputs = () => {
+    const newErrors: {
+      testName?: string;
+      oracle?: string;
+      app?: string;
+    } = {};
+
+    if (currentStep === "select-app") {
+      if (!selectedAppId) {
+        newErrors.app = "Please select an app to continue";
+        setErrors(newErrors);
+        return false;
+      }
+    } else if (currentStep === "create-test") {
+      if (!testName.trim()) {
+        newErrors.testName = "Test name is required";
+      }
+      if (!selectedOracle) {
+        newErrors.oracle = "Oracle selection is required";
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        return false;
+      }
+    }
+
+    setErrors({});
+    return true;
+  };
+
   const handleNextStep = async () => {
+    if (!validateInputs()) {
+      return;
+    }
+
     if (currentStep === "select-app" && selectedAppId) {
       setCurrentStep("create-test");
     } else if (currentStep === "create-test") {
@@ -254,11 +322,6 @@ const Dashboard: React.FC = () => {
 
       if (!token) {
         alert("Authorization token is missing");
-        return;
-      }
-
-      if (!testName || !selectedOracle) {
-        alert("Please provide a Test Name and select an Oracle.");
         return;
       }
 
@@ -276,7 +339,6 @@ const Dashboard: React.FC = () => {
       console.log("Creating test with payload:", testPayload);
 
       // Create test API call
-
       try {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/test`, {
           method: "POST",
@@ -323,6 +385,7 @@ const Dashboard: React.FC = () => {
   const handleBackStep = () => {
     if (currentStep === "create-test") {
       setCurrentStep("select-app");
+      setErrors({}); // Clear any validation errors when going back
     }
   };
 
@@ -366,18 +429,12 @@ const Dashboard: React.FC = () => {
                     <span className="flex-grow text-gray-400">{app.name}</span>
                     <ChevronRight size={20} className="text-violet-500" />
                   </div>
-                  {/*<button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOpenDeleteModal(app.id);
-                    }}
-                    className="absolute top-4 right-4 px-3 py-2 bg-red-600 text-white rounded-full hover:opacity-80 transition-opacity"
-                  >
-                    <Trash2 size={16} />
-                  </button>*/}
                 </div>
               ))}
             </div>
+            {errors.app && (
+              <p className="text-red-500 mb-4 mt-2">{errors.app}</p>
+            )}
           </>
         );
 
@@ -392,17 +449,26 @@ const Dashboard: React.FC = () => {
               <div>
                 <label className="block text-gray-200 mb-2">Test Name</label>
                 <input
-                  className="w-full p-4 bg-gray-800 text-gray-300 border border-violet-900 rounded-lg focus:outline-none"
+                  className={`w-full p-4 bg-gray-800 text-gray-300 border ${
+                    errors.testName ? "border-red-500" : "border-violet-900"
+                  } rounded-lg focus:outline-none`}
                   placeholder="Enter test name"
                   value={testName}
                   onChange={(e) => setTestName(e.target.value)}
                 />
+                {errors.testName && (
+                  <p className="text-red-500 mt-1">{errors.testName}</p>
+                )}
               </div>
 
               <div>
-                <label className="block text-gray-200 mb-2">Oracle type</label>
+                <label className="block text-gray-200 mb-2">
+                  Select Oracle
+                </label>
                 <select
-                  className="w-full p-4 bg-gray-800 text-gray-300 border border-violet-900 rounded-lg focus:outline-none"
+                  className={`w-full p-4 bg-gray-800 text-gray-300 border ${
+                    errors.oracle ? "border-red-500" : "border-violet-900"
+                  } rounded-lg focus:outline-none`}
                   value={selectedOracle}
                   onChange={(e) => {
                     console.log("Selected Oracle:", e.target.value);
@@ -416,6 +482,9 @@ const Dashboard: React.FC = () => {
                     </option>
                   ))}
                 </select>
+                {errors.oracle && (
+                  <p className="text-red-500 mt-1">{errors.oracle}</p>
+                )}
               </div>
 
               <div>
@@ -478,7 +547,6 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Run Test Modal */}
-        {/* Updated Modal */}
         {isRunTestModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="relative bg-gray-900 p-6 rounded-lg max-w-2xl w-full border border-violet-900">
@@ -495,7 +563,7 @@ const Dashboard: React.FC = () => {
                   </button>
                 ) : (
                   <button
-                    onClick={() => setIsRunTestModalOpen(false)}
+                    onClick={handleCloseRunTestModal}
                     className="px-4 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
                   >
                     Close
@@ -505,11 +573,6 @@ const Dashboard: React.FC = () => {
                 <button
                   onClick={handleNextStep}
                   className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
-                  disabled={
-                    (currentStep === "select-app" && !selectedAppId) ||
-                    (currentStep === "create-test" &&
-                      (!testName || !selectedOracle))
-                  }
                 >
                   Next
                 </button>
