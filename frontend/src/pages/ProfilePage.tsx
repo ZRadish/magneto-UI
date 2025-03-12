@@ -93,11 +93,16 @@ const ProfilePage: React.FC = () => {
             throw new Error(`Failed to update name: ${response.status}`);
         }
 
-        // Update local storage & UI
-        localStorage.setItem("firstName", firstName);
-        localStorage.setItem("lastName", lastName);
-        setUserProfile({ name: `${firstName} ${lastName}`, email: userProfile.email });
+        const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+        const formattedLastName = lastName.charAt(0).toUpperCase() + lastName.slice(1).toLowerCase();
 
+        // Update local storage & UI
+        localStorage.setItem("firstName", formattedFirstName);
+        localStorage.setItem("lastName", formattedLastName);
+        setUserProfile({ name: `${formattedFirstName} ${formattedLastName}`, email: userProfile.email });
+
+        window.dispatchEvent(new Event("userUpdated")); // Trigger event listener in SideBar.tsx
+        
         setIsEditingName(false);
     } catch (error) {
         console.error("Error updating name:", error);
@@ -162,17 +167,22 @@ const ProfilePage: React.FC = () => {
             <div className="flex items-center gap-2">
                 {isEditingName ? (
                     <>
+                    <p className="text-gray-400">
+                        <strong>Name: </strong>
+                    </p>
                         <input
                             ref={firstNameInputRef}
                             type="text"
                             value={firstName}
                             onChange={(e) => setFirstName(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
                             className="bg-gray-800 text-gray-300 border border-violet-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-violet-500"
                         />
                         <input
                             type="text"
                             value={lastName}
                             onChange={(e) => setLastName(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
                             className="bg-gray-800 text-gray-300 border border-violet-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-violet-500"
                         />
                     </>

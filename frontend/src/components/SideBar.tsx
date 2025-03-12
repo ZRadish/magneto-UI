@@ -22,13 +22,32 @@ const SideBar = () => {
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("UserId");
-    const storedUsername = localStorage.getItem("firstName");
+    const storedFirstName = localStorage.getItem("firstName") || "Guest";
+    const formattedFirstName = storedFirstName.charAt(0).toUpperCase() + storedFirstName.slice(1).toLowerCase();
+
     if (storedUserId) {
       setUserId(Number(storedUserId));
     }
-    if (storedUsername) {
-      setUsername(storedUsername);
+    if (formattedFirstName) {
+      setUsername(formattedFirstName);
     }
+
+    const updateUser = () => {
+      const storedFirstName = localStorage.getItem("firstName") || "Guest";
+      const formattedFirstName = storedFirstName.charAt(0).toUpperCase() + storedFirstName.slice(1).toLowerCase();
+      setUsername(formattedFirstName);
+    };
+
+    // Initial load
+    updateUser();
+
+    // Listen for name updates
+    window.addEventListener("userUpdated", updateUser);
+
+    // Cleanup event listener on unmount
+    return () => {
+        window.removeEventListener("userUpdated", updateUser);
+  };
   }, []);
 
   useEffect(() => {
