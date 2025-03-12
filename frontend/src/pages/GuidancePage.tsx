@@ -7,6 +7,7 @@ import {
   Download,
   Trash2,
   Edit,
+  Search,
 } from "lucide-react";
 import SideBar from "../components/SideBar";
 import { useNavigate } from "react-router-dom";
@@ -127,13 +128,22 @@ const GuidancePage: React.FC = () => {
       disableBeacon: true,
     },
     {
+      target: ".app-search-bar",
+      content: "Here you can search for apps by their name or description.",
+    },
+    {
       target: ".app-name-1",
       content: "Here you can see the name of your application.",
     },
     {
       target: ".app-edit-icon",
-      content: "Press this here to edit the application name.",
+      content: "Press this here to edit the application folder name.",
     },
+    {
+      target: ".app-del-icon",
+      content: "Press this here to delete the entire application folder.",
+    },
+
     {
       target: ".app-description",
       content: "This section provides a brief description of the application.",
@@ -170,6 +180,10 @@ const GuidancePage: React.FC = () => {
     {
       target: ".results-download-icon",
       content: "Use this icon to download the test results.",
+    },
+    {
+      target: ".test-edit-icon",
+      content: "This icon here allows you to edit the test name.",
     },
     {
       target: ".test-delete-icon",
@@ -236,8 +250,19 @@ const GuidancePage: React.FC = () => {
           </button>
         </div>
 
+        <div className="app-search-bar relative mb-4">
+          <input
+            type="text"
+            placeholder="Search apps by name or description..."
+            value={""}
+            className="w-full px-4 py-2 pl-10 bg-gray-800 text-gray-200 rounded-lg border border-violet-900 focus:outline-none focus:border-purple-600"
+          />
+          <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+        </div>
+
+        {/* Reduced height of the container to prevent overflow */}
         <div
-          className="space-y-4 h-[calc(100vh-200px)] overflow-auto bg-gray-800 rounded-lg p-4 shadow-lg"
+          className="space-y-4 h-[calc(100vh-230px)] overflow-auto bg-gray-800 rounded-lg p-4 shadow-lg"
           style={{
             scrollbarWidth: "none",
             msOverflowStyle: "none",
@@ -255,13 +280,22 @@ const GuidancePage: React.FC = () => {
                 <Folder className="mr-4 text-violet-500" size={24} />
                 <span className="flex-grow text-gray-400">{app.name}</span>
                 <button
-                  className="mr-4 text-violet-500 hover:text-violet-400 transition-colors app-edit-icon"
+                  className="text-violet-500 hover:text-violet-400 transition-colors app-edit-icon"
                   onClick={(e) => {
                     e.stopPropagation();
                   }}
                 >
                   <Edit size={24} />
                 </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                  className="ml-4 mr-4 text-red-500 hover:text-red-400 app-del-icon"
+                >
+                  <Trash2 size={24} />
+                </button>
+
                 <ChevronRight
                   size={24}
                   className={`text-violet-500 transition-transform ${
@@ -372,7 +406,13 @@ const GuidancePage: React.FC = () => {
                                     </button>
                                   </div>
                                 </td>
-                                <td className="p-3">
+                                <td className="p-3 flex items-center gap-3 pl-5">
+                                  <button
+                                    className="test-edit-icon text-violet-500 hover:text-violet-400 transition-colors opacity-50"
+                                    title="Edit Test Name"
+                                  >
+                                    <Edit size={16} />
+                                  </button>
                                   <button
                                     className="test-delete-icon text-red-500 hover:text-red-400 transition-colors p-1 rounded-full opacity-50 cursor-not-allowed"
                                     title="Delete Test"

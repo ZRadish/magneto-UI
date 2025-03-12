@@ -234,3 +234,23 @@ export const getTestInputFile = async (fileId) => {
         throw new Error('Failed to retrieve input file');
     }
 };
+
+export const updateTestNameService = async (testId, testName) => {
+  try {
+    const testObjectId = new mongoose.Types.ObjectId(testId);
+
+    const updatedTest = await Test.findByIdAndUpdate(
+      testObjectId,
+      { $set: { testName } },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedTest) {
+      throw new Error('Test not found');
+    }
+
+    return updatedTest;
+  } catch (error) {
+    throw new Error('Failed to update test name: ' + error.message);
+  }
+};

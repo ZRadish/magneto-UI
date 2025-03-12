@@ -243,3 +243,47 @@ export const resetPasswordService = async (userId, newPassword) => {
   }
 };
 
+export const updateUserNameService = async (userId, firstName, lastName) => {
+  try {
+    // Ensure first and last name are formatted properly
+    const formatName = (name) => name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        firstName: formatName(firstName),
+        lastName: formatName(lastName),
+      },
+      { new: true, select: "firstName lastName email" } // Return only necessary fields
+    );
+
+    if (!updatedUser) {
+      throw new Error("User not found");
+    }
+
+    return updatedUser;
+  } catch (error) {
+    console.error("[SERVICE] Error updating name:", error.message);
+    throw new Error(error.message);
+  }
+};
+
+
+export const changePasswordService = async (userId, oldPassword, newPassword) => {
+  try {
+    const user = await User.findById(userId);
+    if (!user) throw new Error("User not found.");
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) throw new Error("Incorrect old password.");
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedNewPassword;
+    await user.save();
+
+    return { success: true, message: "Password updated successfully." };
+  } catch (error) {
+    throw new Error(error.message);
+  }
+};
+

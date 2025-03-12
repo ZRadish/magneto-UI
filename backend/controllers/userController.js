@@ -160,3 +160,33 @@ export const resetPassword = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+// UPDATE USER NAME API
+export const updateUserName = async (req, res) => {
+  const { firstName, lastName } = req.body;
+  const userId = req.user.id; // Extract from token
+
+  if (!firstName || !lastName) {
+    return res.status(400).json({ error: "First name and last name are required." });
+  }
+
+  try {
+    const updatedUser = await userService.updateUserNameService(userId, firstName, lastName);
+
+    res.status(200).json({ success: true, user: updatedUser });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const changePassword = async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  const userId = req.user.id; // Get user ID from the authenticated token
+
+  try {
+    const result = await userService.changePasswordService(userId, oldPassword, newPassword);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};

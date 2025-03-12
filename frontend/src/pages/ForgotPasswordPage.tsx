@@ -13,35 +13,38 @@ const ForgotPasswordPage = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
+    setError(""); // Clear previous errors
+
+    if (!email.trim()) {
+        setError("Please enter your email address.");
+        return;
+    }
 
     try {
-      const response = await api.post("/user/password/forgot", {
-        email,
-      });
+        const response = await api.post("/user/password/forgot", { email });
 
-      console.log("Response from forgot password:", response);
+        console.log("Response from forgot password:", response);
 
-      const { success, userId, error } = response.data;
+        const { success, userId, error } = response.data;
 
-      if (success) {
-        // Save `_id` from the response to localStorage
-        localStorage.setItem("userId", userId);
-
-        // Navigate to the email verification page with the `userId`
-        navigate("/verify-email", {
-          state: { userId, fromForgotPassword: true },
-        });
-      } else {
-        setError(error || "Failed to send reset link.");
-      }
+        if (!success) {
+            setError(error === "User not found"
+                ? "No account found with this email."
+                : error || "Failed to send reset link."
+            );
+        } else {
+            localStorage.setItem("userId", userId);
+            navigate("/verify-email", {
+                state: { userId, fromForgotPassword: true },
+            });
+        }
     } catch (err: any) {
-      console.error("Error during forgot password request:", err);
-      setError(
-        err.response?.data?.error || "An error occurred. Please try again."
-      );
+        console.error("Error during forgot password request:", err);
+        setError(
+            err.response?.data?.error || "An error occurred. Please try again."
+        );
     }
-  };
+};
 
   return (
     <div

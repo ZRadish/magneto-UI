@@ -29,52 +29,81 @@ const SignUpPage = () => {
     e.preventDefault();
     setError("");
 
-    if (!firstName || !lastName || !email || !password) {
-      setError("All fields are required.");
-      return;
-    }
-
-    if (!PasswordValid) {
-      setError("Password must meet all strength requirements.");
-      return;
-    }
-
-    try {
-      // Step 1: Register the user
-      const response = await api.post("/user/register", {
-        firstName,
-        lastName,
-        email,
-        password,
-      });
-
-      // Log the API response for debugging
-      console.log("Register API Response:", response);
-
-      const data = response.data;
-
-      if (data.error) {
-        setError(data.error);
+    // Validate empty fields
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()) {
+        setError("All fields are required.");
         return;
-      }
-
-      localStorage.setItem("userId", data.user.id);
-
-      // Log the user object to check if `id` exists
-      console.log("User Data:", data.user);
-
-      // Step 2: Trigger email verification
-      await api.post("/user/email/verify", {
-        id: data.user.id, // Ensure `id` exists in the response
-        email: data.user.email,
-      });
-
-      navigate("/verify-email");
-    } catch (error) {
-      console.error("Error during signup:", error);
-      setError("An error occurred during registration.");
     }
-  };
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        setError("Please enter a valid email address.");
+        return;
+    }
+
+    // Validate password strength
+    if (!PasswordValid) {
+        setError("Password must meet all strength requirements.");
+        return;
+    }
+  
+    // Format input values before sending
+    const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+    const formattedLastName = lastName.charAt(0).toUpperCase() + lastName.slice(1).toLowerCase();
+    const formattedEmail = email.toLowerCase();
+  
+    try {
+        // Step 1: Register the user
+        const response = await api.post("/user/register", {
+            firstName: formattedFirstName,
+            lastName: formattedLastName,
+            email: formattedEmail,
+            password,
+        });
+
+        console.log("Register API Response:", response);
+
+        const data = response.data;
+
+        if (data.error) {
+            if (data.error.includes("already exists")) {
+                setError("A user with this email already exists. Please log in.");
+            } else {
+                setError(data.error);
+            }
+            return;
+        }
+
+        if (!data.user || !data.user.id) {
+            setError("Unexpected error: Missing user ID in response.");
+            return;
+        }
+
+        localStorage.setItem("userId", data.user.id);
+        console.log("User Data:", data.user);
+
+        // Step 2: Trigger email verification
+        try {
+            await api.post("/user/email/verify", {
+                id: data.user.id,
+                email: data.user.email,
+            });
+            navigate("/verify-email");
+        } catch (verifyError) {
+            console.error("Error sending verification email:", verifyError);
+            setError("Registration successful, but email verification failed.");
+        }
+    } catch (error: any) {
+        console.error("Error during signup:", error);
+        if (error.response?.status === 409) {
+            setError("A user with this email already exists. Please log in.");
+        } else {
+            setError(error.response?.data?.error || "An error occurred during registration.");
+        }
+    }
+};
+
 
   useEffect(() => {
     validatePassword(password); //Initial validation
