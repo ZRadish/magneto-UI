@@ -29,7 +29,7 @@ const AppRow: React.FC<{
   onUpdateAppName: (appId: string, newName: string) => void;
   onUpdateDescription: (appId: string, newDescription: string) => void;
   handleDeleteApp: (appId: string) => void;
-  expandApp?: boolean; // New prop to control expansion
+  expandApp?: boolean;
   testIdToHighlight?: string;
 }> = ({
   app,
@@ -62,6 +62,11 @@ const AppRow: React.FC<{
     }, 0);
   };
   const appNameInputRef = useRef<HTMLInputElement>(null);
+
+  const [testProgress, setTestProgress] = useState<{ [key: string]: number }>(
+    {}
+  );
+  const progressIntervals = useRef<{ [key: string]: NodeJS.Timeout }>({});
 
   useEffect(() => {
     const fetchTests = async () => {
@@ -134,9 +139,65 @@ const AppRow: React.FC<{
     }
   }, [expandApp]);
 
+  useEffect(() => {
+    if (testIdToHighlight) {
+      // Set initial status to pending for the highlighted test
+      setTests((prevTests) =>
+        prevTests.map((test) =>
+          test._id === testIdToHighlight ? { ...test, status: "pending" } : test
+        )
+      );
+
+      // Clear any existing interval for this test
+      if (progressIntervals.current[testIdToHighlight]) {
+        clearInterval(progressIntervals.current[testIdToHighlight]);
+      }
+
+      // Start at 0 progress
+      setTestProgress((prev) => ({ ...prev, [testIdToHighlight]: 0 }));
+
+      // Set up the progress interval - update every 300ms for 30 seconds total
+      const interval = setInterval(() => {
+        setTestProgress((prev) => {
+          const currentProgress = prev[testIdToHighlight] || 0;
+          const newProgress = currentProgress + 100 / 100; // 100 steps to reach 100%
+
+          // If we've reached 100%, clear the interval and mark as completed
+          if (newProgress >= 100) {
+            clearInterval(progressIntervals.current[testIdToHighlight]);
+
+            // Update the test status to completed
+            setTests((prevTests) =>
+              prevTests.map((test) =>
+                test._id === testIdToHighlight
+                  ? { ...test, status: "completed" }
+                  : test
+              )
+            );
+
+            return { ...prev, [testIdToHighlight]: 100 };
+          }
+
+          return { ...prev, [testIdToHighlight]: newProgress };
+        });
+      }, 300); // 300ms * 100 steps = 30 seconds
+
+      // Store the interval reference
+      progressIntervals.current[testIdToHighlight] = interval;
+
+      // Clean up interval on unmount
+      return () => {
+        if (progressIntervals.current[testIdToHighlight]) {
+          clearInterval(progressIntervals.current[testIdToHighlight]);
+        }
+      };
+    }
+  }, [testIdToHighlight]);
+
   const isHighlightedTest = (testId: string) => {
     return testId === testIdToHighlight;
   };
+
   // const handleFileDownload = async (e: React.MouseEvent, test: AppTest) => {
   //   e.stopPropagation();
   //   const token = localStorage.getItem("authToken");
@@ -579,112 +640,151 @@ const AppRow: React.FC<{
                   </tr>
                 </thead>
                 <tbody className="text-gray-400">
-                  {tests.map((test) => (
+                  {tests.map((test, index) => (
                     <tr
                       key={test._id}
-                      className={`hover:bg-gray-800/50 transition-colors rounded-2xl ${
+                      className={`hover:bg-gray-800/50 transition-colors ${
                         isHighlightedTest(test._id)
-                          ? "bg-violet-900/20 border-l-4 border-violet-500"
+                          ? "bg-violet-900/20 rounded-3xl"
+                          : index === 0
+                          ? "first-test-row"
                           : ""
                       }`}
+                      style={{ overflow: "hidden", borderRadius: "24px" }}
                     >
-                      <td className="p-3 text-base">{test.testName}</td>
-                      <td className="p-3">
-                        {test.fileId ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-400">
-                              {test.fileName}
-                            </span>
-                            <button
-                              className="text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20"
-                              onClick={(e) => handleInputFileDownload(e, test)}
-                              title="Download File"
-                            >
-                              <Download size={16} />
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-red-500">No file</span>
-                        )}
-                      </td>
-                      <td className="p-3">
-                        {new Date(test.createdAt).toLocaleString()}
-                      </td>
-                      <td className="p-3">
-                        <span
-                          className={`px-3 py-1.5 rounded-full text-xs ${
-                            test.status === "completed"
-                              ? "bg-green-500/20 text-green-400"
-                              : "bg-yellow-500/20 text-yellow-400"
-                          }`}
-                        >
-                          {test.status}
-                        </span>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex flex-col gap-1.5">
-                          {test.oracleSelected &&
-                            (() => {
-                              const colorClass =
-                                {
-                                  "Theme Check":
-                                    "bg-orange-900/20 text-center text-orange-400",
-                                  "Back Button":
-                                    "bg-blue-900/20 text-center text-blue-400",
-                                  "Language Detection":
-                                    "bg-pink-900/20 text-center text-pink-400",
-                                  "User Input":
-                                    "bg-yellow-900/20 text-center text-yellow-400",
-                                }[test.oracleSelected] ||
-                                "bg-violet-900/20 text-center text-violet-400";
-
-                              return (
-                                <span
-                                  className={`px-3 py-1.5 ${colorClass} rounded-full text-xs w-44`}
-                                >
-                                  {test.oracleSelected}
-                                </span>
-                              );
-                            })()}
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <button
-                          className="text-violet-500 hover:text-violet-400 transition-colors"
-                          onClick={() => openModal("notes", test._id)}
-                        >
-                          {test.notes ? "View/Edit" : "Add Notes"}
-                        </button>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-center gap-2">
-                          <button
-                            className="text-violet-500 hover:text-violet-400 transition-colors"
-                            onClick={() => openModal("results", test._id)}
+                      {test.status === "pending" &&
+                      isHighlightedTest(test._id) ? (
+                        // Pending test row with progress bar (exactly as your example)
+                        <td colSpan={8} className="p-4">
+                          <div
+                            className="bg-violet-900/20 border-2 border-violet-500 rounded-3xl p-4"
+                            style={{ overflow: "hidden" }} // Keeps content inside rounded borders
                           >
-                            View
-                          </button>
-                          {test.result && (
-                            <button
-                              className="text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20"
-                              onClick={(e) => handleResultsDownload(e, test)}
-                              title="Download Results"
+                            <div className="flex items-center space-x-4 test-progress-bar">
+                              <span className="text-yellow-600 w-1/4">
+                                {test.testName}
+                              </span>
+                              <div className="w-full bg-gray-700 rounded-full h-2.5">
+                                <div
+                                  className="bg-yellow-600 h-2.5 rounded-full"
+                                  style={{
+                                    width: `${testProgress[test._id] || 0}%`,
+                                  }}
+                                ></div>
+                              </div>
+                              <span className="text-gray-400 w-1/12">
+                                {Math.round(testProgress[test._id] || 0)}%
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                      ) : (
+                        <>
+                          <td className="p-3 text-base">{test.testName}</td>
+                          <td className="p-3">
+                            {test.fileId ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-gray-400">
+                                  {test.fileName}
+                                </span>
+                                <button
+                                  className="text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20"
+                                  onClick={(e) =>
+                                    handleInputFileDownload(e, test)
+                                  }
+                                  title="Download File"
+                                >
+                                  <Download size={16} />
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-red-500">
+                                No file
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3">
+                            {new Date(test.createdAt).toLocaleString()}
+                          </td>
+                          <td className="p-3">
+                            <span
+                              className={`px-3 py-1.5 rounded-full text-xs ${
+                                test.status === "completed"
+                                  ? "bg-green-500/20 text-green-400"
+                                  : "bg-yellow-500/20 text-yellow-400"
+                              }`}
                             >
-                              <Download size={16} />
+                              {test.status}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex flex-col gap-1.5">
+                              {test.oracleSelected &&
+                                (() => {
+                                  const colorClass =
+                                    {
+                                      "Theme Check":
+                                        "bg-orange-900/20 text-center text-orange-400",
+                                      "Back Button":
+                                        "bg-blue-900/20 text-center text-blue-400",
+                                      "Language Detection":
+                                        "bg-pink-900/20 text-center text-pink-400",
+                                      "User Input":
+                                        "bg-yellow-900/20 text-center text-yellow-400",
+                                    }[test.oracleSelected] ||
+                                    "bg-violet-900/20 text-center text-violet-400";
+
+                                  return (
+                                    <span
+                                      className={`px-3 py-1.5 ${colorClass} rounded-full text-xs w-44`}
+                                    >
+                                      {test.oracleSelected}
+                                    </span>
+                                  );
+                                })()}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <button
+                              className="text-violet-500 hover:text-violet-400 transition-colors"
+                              onClick={() => openModal("notes", test._id)}
+                            >
+                              {test.notes ? "View/Edit" : "Add Notes"}
                             </button>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <button
-                          className="text-red-500 hover:text-red-400 transition-colors p-1 rounded-full"
-                          onClick={() => handleDeleteTest(test._id)}
-                          title="Delete Test"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </td>{" "}
-                      {/* Add the delete button here */}
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-2">
+                              <button
+                                className="text-violet-500 hover:text-violet-400 transition-colors"
+                                onClick={() => openModal("results", test._id)}
+                              >
+                                View
+                              </button>
+                              {test.result && (
+                                <button
+                                  className="text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20"
+                                  onClick={(e) =>
+                                    handleResultsDownload(e, test)
+                                  }
+                                  title="Download Results"
+                                >
+                                  <Download size={16} />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <button
+                              className="text-red-500 hover:text-red-400 transition-colors p-1 rounded-full"
+                              onClick={() => handleDeleteTest(test._id)}
+                              title="Delete Test"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </td>{" "}
+                          {/* Add the delete button here */}
+                        </>
+                      )}
                     </tr>
                   ))}
                 </tbody>
