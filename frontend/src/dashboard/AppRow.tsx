@@ -29,16 +29,20 @@ const AppRow: React.FC<{
   onUpdateAppName: (appId: string, newName: string) => void;
   onUpdateDescription: (appId: string, newDescription: string) => void;
   handleDeleteApp: (appId: string) => void;
+  expandApp?: boolean; // New prop to control expansion
+  testIdToHighlight?: string;
 }> = ({
   app,
   onUpdateNotes,
   onUpdateAppName,
   onUpdateDescription,
   handleDeleteApp,
+  expandApp = false,
+  testIdToHighlight,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newAppName, setNewAppName] = useState(app.name);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(expandApp);
   const [activeModal, setActiveModal] = useState<{
     type: "notes" | "results";
     testId: string;
@@ -124,6 +128,15 @@ const AppRow: React.FC<{
     fetchTests();
   }, [app.id, isExpanded]);
 
+  useEffect(() => {
+    if (expandApp) {
+      setIsExpanded(true);
+    }
+  }, [expandApp]);
+
+  const isHighlightedTest = (testId: string) => {
+    return testId === testIdToHighlight;
+  };
   // const handleFileDownload = async (e: React.MouseEvent, test: AppTest) => {
   //   e.stopPropagation();
   //   const token = localStorage.getItem("authToken");
@@ -569,7 +582,11 @@ const AppRow: React.FC<{
                   {tests.map((test) => (
                     <tr
                       key={test._id}
-                      className="hover:bg-gray-800/50 transition-colors rounded-2xl"
+                      className={`hover:bg-gray-800/50 transition-colors rounded-2xl ${
+                        isHighlightedTest(test._id)
+                          ? "bg-violet-900/20 border-l-4 border-violet-500"
+                          : ""
+                      }`}
                     >
                       <td className="p-3 text-base">{test.testName}</td>
                       <td className="p-3">

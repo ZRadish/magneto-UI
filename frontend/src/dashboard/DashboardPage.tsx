@@ -3,7 +3,17 @@ import { Play, Plus } from "lucide-react";
 import { Folder, ChevronRight } from "lucide-react";
 import SideBar from "../components/SideBar";
 import AppRow from "./AppRow";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Location } from "react-router-dom";
+
+interface LocationWithState extends Location {
+  state: {
+    appId?: string;
+    testId?: string;
+    fileName?: string;
+    expandAppFolder?: boolean;
+    fromUpload?: boolean;
+  } | null;
+}
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -28,6 +38,11 @@ const Dashboard: React.FC = () => {
   const [apps, setApps] = useState<
     { id: string; name: string; description: string; tests: any[] }[]
   >([]);
+
+  const location = useLocation() as LocationWithState;
+  const appIdFromUpload = location.state?.appId;
+  const testIdFromUpload = location.state?.testId;
+  const expandAppFolder = location.state?.expandAppFolder;
 
   // Oracle options
   const oracleOptions = [
@@ -85,6 +100,12 @@ const Dashboard: React.FC = () => {
 
     fetchUserApps();
   }, []);
+
+  useEffect(() => {
+    if (expandAppFolder && appIdFromUpload) {
+      setSelectedAppId(appIdFromUpload);
+    }
+  }, [expandAppFolder, appIdFromUpload]);
 
   const handleOpenRunTestModal = () => {
     setIsRunTestModalOpen(true);
@@ -472,6 +493,8 @@ const Dashboard: React.FC = () => {
                 onUpdateAppName={handleUpdateAppName}
                 onUpdateDescription={handleUpdateDescription}
                 handleDeleteApp={handleOpenDeleteModal}
+                expandApp={expandAppFolder && app.id === appIdFromUpload}
+                testIdToHighlight={testIdFromUpload}
               />
             </div>
           ))}

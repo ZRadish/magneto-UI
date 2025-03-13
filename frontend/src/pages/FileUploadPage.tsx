@@ -3,7 +3,7 @@ import axios, { AxiosProgressEvent } from "axios";
 import { motion } from "framer-motion";
 import { UploadCloud, Play, AlertCircle, X, Loader } from "lucide-react";
 import api from "../utils/api";
-import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 const FileUploadPage = () => {
   const [searchParams] = useSearchParams();
@@ -37,7 +37,7 @@ const FileUploadPage = () => {
     }
   };
 
-  const handleDeleteFile = () => {
+  const handleDeleteFile = (index: number) => {
     setFiles(null);
     setMsg("File removed. You can upload a new one.");
 
