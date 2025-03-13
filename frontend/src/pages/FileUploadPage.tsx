@@ -22,28 +22,32 @@ const FileUploadPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = e.target.files;
-    if (selectedFiles) {
-      const validFiles = Array.from(selectedFiles).filter((file) =>
+    if (e.target.files) {
+      const selectedFiles = Array.from(e.target.files).filter((file) =>
         file.name.toLowerCase().endsWith(".zip")
       );
 
-      if (validFiles.length !== selectedFiles.length) {
+      if (selectedFiles.length === 0) {
         setMsg("Only ZIP files are allowed.");
+        setFiles(null);
       } else {
         setMsg(null);
+        setFiles(e.target.files);
       }
-
-      setFiles(
-        validFiles.length > 0 ? (validFiles as unknown as FileList) : null
-      );
     }
   };
 
-  const handleDeleteFile = (index: number) => {
-    if (!files) return;
-    const updatedFiles = Array.from(files).filter((_, i) => i !== index);
-    setFiles(updatedFiles as unknown as FileList);
+  const handleDeleteFile = () => {
+    setFiles(null);
+    setMsg("File removed. You can upload a new one.");
+
+    // Reset input field to allow re-selection of the same file
+    const fileInput = document.getElementById(
+      "file-upload"
+    ) as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = "";
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -187,7 +191,15 @@ const FileUploadPage = () => {
 
       // Run the Magneto test with the uploaded file ID
       console.log("here", fileName);
-      navigate(`/dashboard`, { state: { appId, testId, fileName } });
+      navigate(`/dashboard`, {
+        state: {
+          appId,
+          testId,
+          fileName,
+          expandAppFolder: true, // Add a flag to indicate that the app folder should be expanded
+          fromUpload: true, // Add a flag to indicate that we're coming from upload page
+        },
+      });
       await runMagnetoTest(fileName);
     } catch (error) {
       setMsg("Upload or processing failed");
@@ -207,7 +219,7 @@ const FileUploadPage = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-4xl"
+        className="w-full max-w-4xl  border-2 border-violet-900 rounded-xl"
       >
         <div className="bg-gray-800 bg-opacity-50 backdrop-blur-xl rounded-xl shadow-xl overflow-hidden">
           {/* Header */}
