@@ -64,9 +64,13 @@ const AppRow: React.FC<{
   const appNameInputRef = useRef<HTMLInputElement>(null);
 
   const [testProgress, setTestProgress] = useState<{ [key: string]: number }>(
-    {}
+    () => JSON.parse(localStorage.getItem("testProgress") || "{}")
   );
   const progressIntervals = useRef<{ [key: string]: NodeJS.Timeout }>({});
+  const [completedTests, setCompletedTests] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem("completedTests");
+    return saved ? new Set(JSON.parse(saved)) : new Set<string>();
+  });
 
   useEffect(() => {
     const fetchTests = async () => {
@@ -140,62 +144,70 @@ const AppRow: React.FC<{
   }, [expandApp]);
 
   useEffect(() => {
-    if (testIdToHighlight) {
-      // Set initial status to pending for the highlighted test
-      setTests((prevTests) =>
-        prevTests.map((test) =>
-          test._id === testIdToHighlight ? { ...test, status: "pending" } : test
-        )
+    if (
+      testIdToHighlight &&
+      tests.some((test) => test._id === testIdToHighlight) &&
+      !completedTests.has(testIdToHighlight)
+    ) {
+      const highlightedTest = tests.find(
+        (test) => test._id === testIdToHighlight
       );
 
-      // Clear any existing interval for this test
-      if (progressIntervals.current[testIdToHighlight]) {
-        clearInterval(progressIntervals.current[testIdToHighlight]);
-      }
-
-      // Start at 0 progress
-      setTestProgress((prev) => ({ ...prev, [testIdToHighlight]: 0 }));
-
-      // Set up the progress interval - update every 300ms for 30 seconds total
-      const interval = setInterval(() => {
-        setTestProgress((prev) => {
-          const currentProgress = prev[testIdToHighlight] || 0;
-          const newProgress = currentProgress + 100 / 100; // 100 steps to reach 100%
-
-          // If we've reached 100%, clear the interval and mark as completed
-          if (newProgress >= 100) {
-            clearInterval(progressIntervals.current[testIdToHighlight]);
-
-            // Update the test status to completed
-            setTests((prevTests) =>
-              prevTests.map((test) =>
-                test._id === testIdToHighlight
-                  ? { ...test, status: "completed" }
-                  : test
-              )
-            );
-
-            return { ...prev, [testIdToHighlight]: 100 };
-          }
-
-          return { ...prev, [testIdToHighlight]: newProgress };
-        });
-      }, 300); // 300ms * 100 steps = 30 seconds
-
-      // Store the interval reference
-      progressIntervals.current[testIdToHighlight] = interval;
-
-      // Clean up interval on unmount
-      return () => {
+      // Set up progress tracking if the test exists
+      if (highlightedTest) {
+        // Clear any existing interval for this test
         if (progressIntervals.current[testIdToHighlight]) {
           clearInterval(progressIntervals.current[testIdToHighlight]);
         }
-      };
+
+        // Start at 0 progress
+        setTestProgress((prev) => ({ ...prev, [testIdToHighlight]: 0 }));
+
+        // Set up the progress interval - update every 300ms for 30 seconds total
+        const interval = setInterval(() => {
+          setTestProgress((prev) => {
+            const currentProgress = prev[testIdToHighlight] || 0;
+            const newProgress = currentProgress + 100 / 100; // 100 steps to reach 100%
+
+            // If we've reached 100%, clear the interval and mark as completed
+            if (newProgress >= 100) {
+              clearInterval(progressIntervals.current[testIdToHighlight]);
+
+              // Update the test status to completed
+              setTests((prevTests) =>
+                prevTests.map((test) =>
+                  test._id === testIdToHighlight
+                    ? { ...test, status: "completed" }
+                    : test
+                )
+              );
+
+              // Mark this test as completed and save to localStorage
+              const newCompleted = new Set(completedTests);
+              newCompleted.add(testIdToHighlight);
+              setCompletedTests(newCompleted);
+              localStorage.setItem(
+                "completedTests",
+                JSON.stringify([...newCompleted])
+              );
+
+              return { ...prev, [testIdToHighlight]: 100 };
+            }
+            return { ...prev, [testIdToHighlight]: newProgress };
+          });
+        }, 300); // 300ms * 100 steps = 30 seconds
+
+        // Store the interval reference
+        progressIntervals.current[testIdToHighlight] = interval;
+
+        // Clean up interval on unmount
+        return () => clearInterval(interval);
+      }
     }
-  }, [testIdToHighlight]);
+  }, [testIdToHighlight, tests, completedTests]);
 
   const isHighlightedTest = (testId: string) => {
-    return testId === testIdToHighlight;
+    return testId === testIdToHighlight && !completedTests.has(testId);
   };
 
   // const handleFileDownload = async (e: React.MouseEvent, test: AppTest) => {
@@ -645,7 +657,7 @@ const AppRow: React.FC<{
                       key={test._id}
                       className={`hover:bg-gray-800/50 transition-colors ${
                         isHighlightedTest(test._id)
-                          ? "bg-violet-900/20 rounded-3xl"
+                          ? ""
                           : index === 0
                           ? "first-test-row"
                           : ""
