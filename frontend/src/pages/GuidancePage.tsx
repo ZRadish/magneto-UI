@@ -184,7 +184,7 @@ const GuidancePage: React.FC = () => {
     // When tour is finished, navigate to dashboard
     if (status === "finished" || status === "skipped") {
       setRunTour(false);
-      navigate("/dashboard");
+      navigate("/tutorial");
     }
   };
 
