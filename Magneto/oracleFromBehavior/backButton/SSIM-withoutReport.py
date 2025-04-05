@@ -230,8 +230,17 @@ def main():
 
         # Check text mismatch if SSIM > 0.8
         if ssim_val > 0.8:
-            before_text = imgUtil.read_text_on_screen(args["first"])
-            after_text = imgUtil.read_text_on_screen(args["second"])
+            img_path = os.path.join(unzip_dir, bugId)
+            #before_text = imgUtil.read_text_on_screen(args["bugId"], os.path.basename(args["first"]))
+            #after_text = imgUtil.read_text_on_screen(args["bugId"], os.path.basename(args["second"]))
+
+            before_text = imgUtil.read_text_on_screen(img_path, os.path.basename(args["first"]))
+            after_text = imgUtil.read_text_on_screen(img_path, os.path.basename(args["second"]))
+            #print("Reading before:", os.path.join(img_path, os.path.basename(args["first"])))
+            #print("Reading after:", os.path.join(img_path, os.path.basename(args["second"])))
+
+
+
             diff = set(before_text) - set(after_text)
             if len(before_text) == 0:
                 missing_frac = 0  # avoid division by zero

@@ -425,6 +425,24 @@ def draw_wrapped_text(canvas, text, x, y, max_width, font='Helvetica', font_size
     return y
 
 
+def draw_table_with_page_check(canvas, table, current_x, current_y, page_width, page_height, bottom_margin=50):
+    """
+    Draws a table on the canvas, forcing a page break if there is not
+    enough space left on the current page for the entire table.
+    Returns the new y-position after drawing.
+    """
+    table_width, table_height = table.wrap(0, 0)
+    # If the table won't fit in the remaining space, start a new page
+    if current_y - table_height < bottom_margin:
+        canvas.showPage()
+        canvas.setFont("Helvetica", 10)  # reset font if needed
+        current_y = page_height - bottom_margin
+    
+    table.drawOn(canvas, current_x, current_y - table_height)
+    current_y -= table_height  # update our running y-position
+    return current_y
+
+
 # ----------------------------------------------------------------
 # PDF GENERATION FUNCTION (WRAPPED TEXT + CENTERED TABLES + IMAGES)
 # ----------------------------------------------------------------
@@ -509,12 +527,18 @@ def generate_pdf_report(unzip_dir, summary, pdf_path, console_output):
         ("GRID", (0, 0), (-1, -1), 1, colors.black),
     ]))
 
-    # Wrap so we can get table width, height
-    table_width, table_height = delta_table.wrap(0, 0)
-    table_x = (page_width - table_width) / 2  # center horizontally
-
-    delta_table.drawOn(c, table_x, y_position - table_height)
-    y_position -= (table_height + 30)
+    table_width, table_height = delta_table.wrapOn(c, 0, 0)
+    table_x = (page_width - table_width) / 2
+    # then call your draw_table_with_page_check but pass table_x, not a fixed 400 offset
+    y_position = draw_table_with_page_check(
+        c,
+        delta_table,
+        table_x,
+        y_position,
+        page_width,
+        page_height
+    )
+    y_position -= 30
 
     # ---------------- 2) Text Visibility Table ----------------
     c.setFont("Helvetica-Bold", 12)
@@ -523,12 +547,12 @@ def generate_pdf_report(unzip_dir, summary, pdf_path, console_output):
 
     tv_data = [["Screen", "Visible (%)", "Missing (%)"]]
     for item in summary["text_visibility"]:
-        screen_name = item["screen"]
+        screen_name = Paragraph(item["screen"], styleN)
         visible_pct = item["visible_pct"]
         missing_pct = item["missing_pct"]
         tv_data.append([screen_name, f"{visible_pct}%", f"{missing_pct}%"])
 
-    tv_table = Table(tv_data, colWidths=[400, 80, 80])  # Adjust as needed
+    tv_table = Table(tv_data, colWidths=[390, 70, 100])  # Adjust as needed
     tv_table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
@@ -538,11 +562,17 @@ def generate_pdf_report(unzip_dir, summary, pdf_path, console_output):
         ("GRID", (0, 0), (-1, -1), 1, colors.black),
     ]))
 
-    tv_width, tv_height = tv_table.wrap(0, 0)
-    tv_x = (page_width - tv_width) / 2  # center horizontally
-
-    tv_table.drawOn(c, tv_x, y_position - tv_height)
-    y_position -= (tv_height + 30)
+    table_width, table_height = tv_table.wrapOn(c, 0, 0)
+    table_x = (page_width - table_width) / 2
+    y_position = draw_table_with_page_check(
+        c,
+        tv_table,
+        table_x,
+        y_position,
+        page_width,
+        page_height
+    )
+    y_position -= 30
 
     # ============= 3) Failed ThemeCheck Pages (Images) ============
     # Find pages that failed the theme consistency check
