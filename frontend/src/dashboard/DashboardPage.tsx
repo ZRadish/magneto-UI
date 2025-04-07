@@ -396,10 +396,8 @@ const Dashboard: React.FC = () => {
   };
 
   // Filter apps based on search query
-  const filteredApps = apps.filter(
-    (app) =>
-      app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.description.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredApps = apps.filter((app) =>
+    app.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const renderModalContent = () => {
@@ -546,7 +544,7 @@ const Dashboard: React.FC = () => {
         <div className="relative mb-4">
           <input
             type="text"
-            placeholder="Search apps by name or description..."
+            placeholder="Search apps by name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full px-4 py-2 pl-10 bg-gray-800 text-gray-200 rounded-lg border border-violet-900 focus:outline-none focus:border-purple-600"
