@@ -49,6 +49,7 @@ const Dashboard: React.FC = () => {
 
   const location = useLocation() as LocationWithState;
   const appIdFromUpload = location.state?.appId;
+  const testIdFromUpload = location.state?.testId;
   const expandAppFolder = location.state?.expandAppFolder;
 
   // Oracle options
@@ -118,6 +119,7 @@ const Dashboard: React.FC = () => {
       setSelectedAppId(appIdFromUpload);
     }
   }, [expandAppFolder, appIdFromUpload]);
+  
 
   const handleOpenRunTestModal = () => {
     resetModalState(); // Reset all state when opening the modal
@@ -140,7 +142,7 @@ const Dashboard: React.FC = () => {
     resetModalState();
   };
 
-  const handleAppSelect = (appId: string) => {
+  const msOverFlSelect = (appId: string) => {
     setSelectedAppId(appId);
     // Don't automatically go to the next step, just select the app
     setErrors({}); // Clear any previous errors
@@ -415,6 +417,12 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleAppSelect = (appId: string) => {
+    setSelectedAppId(appId);
+    // Don't automatically go to the next step, just select the app
+    setErrors({}); // Clear any previous errors
+  };
+
   // Filter apps based on search query
   const filteredApps = apps.filter((app) =>
     app.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -634,6 +642,8 @@ const Dashboard: React.FC = () => {
                   onUpdateAppName={handleUpdateAppName}
                   onUpdateDescription={handleUpdateDescription}
                   handleDeleteApp={handleOpenDeleteModal}
+                  expandApp={expandAppFolder && app.id === appIdFromUpload}
+                  testIdToHighlight={testIdFromUpload}
                 />
               </div>
             ))

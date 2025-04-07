@@ -150,6 +150,19 @@ const AppRow: React.FC<{
     }
   }, [expandApp]);
 
+  const testRefs = useRef<{ [key: string]: HTMLTableRowElement | null }>({});
+  useEffect(() => {
+    const highlightedTestId = tests.find((test) =>
+      isHighlightedTest(test._id)
+    )?._id;
+    if (highlightedTestId && testRefs.current[highlightedTestId]) {
+      testRefs.current[highlightedTestId]?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [tests, testProgress]);
+
   useEffect(() => {
     if (
       testIdToHighlight &&
@@ -707,6 +720,7 @@ const AppRow: React.FC<{
                   {tests.map((test, index) => (
                     <React.Fragment key={test._id}>
                       <tr
+                        ref={(el) => (testRefs.current[test._id] = el)}
                         className={`hover:bg-gray-800/50 transition-colors ${
                           isHighlightedTest(test._id)
                             ? ""
