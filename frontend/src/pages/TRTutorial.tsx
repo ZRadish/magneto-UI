@@ -24,6 +24,7 @@ interface Section {
 
 const TutorialPage = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
   const contentRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   const sections: Section[] = [
@@ -84,6 +85,8 @@ const TutorialPage = () => {
   ];
 
   const scrollToSection = (id: string) => {
+    setActiveSection(id);
+
     const element = contentRefs.current[id];
     if (element) {
       const elementRect = element.getBoundingClientRect();
@@ -126,10 +129,14 @@ const TutorialPage = () => {
             <button
               key={section.id}
               onClick={() => scrollToSection(section.id)}
-              className={`flex items-center w-full text-left p-3 mb-1 rounded-lg hover:bg-violet-500/10 transition-colors ${
+              className={`flex items-center w-full text-left p-3 mb-1 rounded-lg ${
                 section.level === 2
                   ? "ml-4 text-sm text-gray-400"
                   : "font-medium text-gray-300"
+              } ${
+                activeSection === section.id
+                  ? "bg-violet-500/10"
+                  : "hover:bg-violet-500/10"
               }`}
             >
               <span className="text-violet-400">{section.icon}</span>
