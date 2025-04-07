@@ -54,6 +54,9 @@ const AppRow: React.FC<{
   const [editingTestId, setEditingTestId] = useState<string | null>(null);
   const [editingTestName, setEditingTestName] = useState<string>("");
   const testNameInputRef = useRef<HTMLInputElement>(null);
+  const [deleteConfirmTestId, setDeleteConfirmTestId] = useState<string | null>(
+    null
+  );
 
   const handleEditClick = () => {
     setIsEditing(true);
@@ -391,39 +394,48 @@ const AppRow: React.FC<{
     }
   };
 
-  const handleDeleteTest = async (testId: string) => {
-    if (window.confirm("Are you sure you want to delete this test?")) {
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        alert("Authentication token not found");
-        return;
-      }
+  const handleDeleteTestClick = (testId: string) => {
+    // Toggle the confirmation - if already showing for this test, hide it
+    setDeleteConfirmTestId(deleteConfirmTestId === testId ? null : testId);
+  };
 
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/test/${testId}`,
-          {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to delete test: ${response.status}`);
-        }
-
-        // Remove the deleted test from the local state
-        setTests((prevTests) =>
-          prevTests.filter((test) => test._id !== testId)
-        );
-      } catch (error) {
-        console.error("Error deleting test:", error);
-        alert("Failed to delete the test. Please try again.");
-      }
+  const handleConfirmDeleteTest = async (testId: string) => {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      alert("Authentication token not found");
+      return;
     }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/test/${testId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete test: ${response.status}`);
+      }
+
+      // Remove the deleted test from the local state
+      setTests((prevTests) => prevTests.filter((test) => test._id !== testId));
+
+      // Clear the confirmation state
+      setDeleteConfirmTestId(null);
+    } catch (error) {
+      console.error("Error deleting test:", error);
+      alert("Failed to delete the test. Please try again.");
+    }
+  };
+
+  const handleCancelDeleteTest = () => {
+    // Hide the confirmation
+    setDeleteConfirmTestId(null);
   };
 
   const handleEditTestName = (testId: string) => {
@@ -614,136 +626,183 @@ const AppRow: React.FC<{
                 </thead>
                 <tbody className="text-gray-400">
                   {tests.map((test) => (
-                    <tr
-                      key={test._id}
-                      className="hover:bg-gray-800/50 transition-colors rounded-2xl"
-                    >
-                      <td className="p-3 text-base w-[150px]">
-                        {editingTestId === test._id ? (
-                          <input
-                            ref={testNameInputRef}
-                            type="text"
-                            value={editingTestName}
-                            onChange={(e) => setEditingTestName(e.target.value)}
-                            className="bg-transparent border border-violet-700 rounded px-2 py-1 text-gray-400 w-full focus:outline-none"
-                            onBlur={() => handleSaveTestName(test._id)}
-                            onKeyDown={(e) =>
-                              e.key === "Enter" && handleSaveTestName(test._id)
-                            }
-                          />
-                        ) : (
-                          test.testName
-                        )}
-                      </td>
-                      <td className="p-3">
-                        {test.fileId ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-400">
-                              {test.fileName}
+                    <React.Fragment key={test._id}>
+                      <tr className="hover:bg-gray-800/50 transition-colors rounded-2xl">
+                        <td className="p-3 text-base w-[150px]">
+                          {editingTestId === test._id ? (
+                            <input
+                              ref={testNameInputRef}
+                              type="text"
+                              value={editingTestName}
+                              onChange={(e) =>
+                                setEditingTestName(e.target.value)
+                              }
+                              className="bg-transparent border border-violet-700 rounded px-2 py-1 text-gray-400 w-full focus:outline-none"
+                              onBlur={() => handleSaveTestName(test._id)}
+                              onKeyDown={(e) =>
+                                e.key === "Enter" &&
+                                handleSaveTestName(test._id)
+                              }
+                            />
+                          ) : (
+                            test.testName
+                          )}
+                        </td>
+                        <td className="p-3">
+                          {test.fileId ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-gray-400">
+                                {test.fileName}
+                              </span>
+                              <button
+                                className="text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20"
+                                onClick={(e) =>
+                                  handleInputFileDownload(e, test)
+                                }
+                                title="Download File"
+                              >
+                                <Download size={16} />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-red-500">
+                              No file
                             </span>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          {new Date(test.createdAt).toLocaleString()}
+                        </td>
+                        <td className="p-3">
+                          <span
+                            className={`px-3 py-1.5 rounded-full text-xs ${
+                              test.status === "completed"
+                                ? "bg-green-500/20 text-green-400"
+                                : "bg-yellow-500/20 text-yellow-400"
+                            }`}
+                          >
+                            {test.status}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex flex-col gap-1.5">
+                            {test.oracleSelected &&
+                              (() => {
+                                const colorClass =
+                                  {
+                                    "Theme Check":
+                                      "bg-orange-900/20 text-center text-orange-400",
+                                    "Back Button":
+                                      "bg-blue-900/20 text-center text-blue-400",
+                                    "Language Detection":
+                                      "bg-pink-900/20 text-center text-pink-400",
+                                    "User Input":
+                                      "bg-yellow-900/20 text-center text-yellow-400",
+                                  }[test.oracleSelected] ||
+                                  "bg-violet-900/20 text-center text-violet-400";
+
+                                return (
+                                  <span
+                                    className={`px-3 py-1.5 ${colorClass} rounded-full text-xs w-44`}
+                                  >
+                                    {test.oracleSelected}
+                                  </span>
+                                );
+                              })()}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <button
+                            className="text-violet-500 hover:text-violet-400 transition-colors"
+                            onClick={() => openModal("notes", test._id)}
+                          >
+                            {test.notes ? "View/Edit" : "Add Notes"}
+                          </button>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-2">
                             <button
-                              className="text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20"
-                              onClick={(e) => handleInputFileDownload(e, test)}
-                              title="Download File"
+                              className="text-violet-500 hover:text-violet-400 transition-colors"
+                              onClick={() => openModal("results", test._id)}
                             >
-                              <Download size={16} />
+                              View
+                            </button>
+                            {test.result && (
+                              <button
+                                className="text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20"
+                                onClick={(e) => handleResultsDownload(e, test)}
+                                title="Download Results"
+                              >
+                                <Download size={16} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                        {/* Actions column with consistent spacing - Test level */}
+                        <td className="p-3">
+                          <div className="flex items-center ml-2">
+                            <button
+                              className="text-violet-500 hover:text-violet-400 transition-colors"
+                              onClick={() => handleEditTestName(test._id)}
+                            >
+                              {editingTestId === test._id ? (
+                                <Save size={16} />
+                              ) : (
+                                <Edit size={16} />
+                              )}
+                            </button>
+                            <button
+                              className="ml-4 text-red-500 hover:text-red-400 transition-colors"
+                              onClick={() => handleDeleteTestClick(test._id)}
+                              title="Delete Test"
+                            >
+                              <Trash2 size={16} />
                             </button>
                           </div>
-                        ) : (
-                          <span className="text-sm text-red-500">No file</span>
-                        )}
-                      </td>
-                      <td className="p-3">
-                        {new Date(test.createdAt).toLocaleString()}
-                      </td>
-                      <td className="p-3">
-                        <span
-                          className={`px-3 py-1.5 rounded-full text-xs ${
-                            test.status === "completed"
-                              ? "bg-green-500/20 text-green-400"
-                              : "bg-yellow-500/20 text-yellow-400"
-                          }`}
-                        >
-                          {test.status}
-                        </span>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex flex-col gap-1.5">
-                          {test.oracleSelected &&
-                            (() => {
-                              const colorClass =
-                                {
-                                  "Theme Check":
-                                    "bg-orange-900/20 text-center text-orange-400",
-                                  "Back Button":
-                                    "bg-blue-900/20 text-center text-blue-400",
-                                  "Language Detection":
-                                    "bg-pink-900/20 text-center text-pink-400",
-                                  "User Input":
-                                    "bg-yellow-900/20 text-center text-yellow-400",
-                                }[test.oracleSelected] ||
-                                "bg-violet-900/20 text-center text-violet-400";
+                        </td>
+                      </tr>
 
-                              return (
-                                <span
-                                  className={`px-3 py-1.5 ${colorClass} rounded-full text-xs w-44`}
-                                >
-                                  {test.oracleSelected}
-                                </span>
-                              );
-                            })()}
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <button
-                          className="text-violet-500 hover:text-violet-400 transition-colors"
-                          onClick={() => openModal("notes", test._id)}
-                        >
-                          {test.notes ? "View/Edit" : "Add Notes"}
-                        </button>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-center gap-2">
-                          <button
-                            className="text-violet-500 hover:text-violet-400 transition-colors"
-                            onClick={() => openModal("results", test._id)}
-                          >
-                            View
-                          </button>
-                          {test.result && (
-                            <button
-                              className="text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20"
-                              onClick={(e) => handleResultsDownload(e, test)}
-                              title="Download Results"
-                            >
-                              <Download size={16} />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                      {/* Actions column with consistent spacing - Test level */}
-                      <td className="p-3">
-                        <div className="flex items-center ml-2">
-                          <button
-                            className="text-violet-500 hover:text-violet-400 transition-colors"
-                            onClick={() => handleEditTestName(test._id)}
-                          >
-                            {editingTestId === test._id ? (
-                              <Save size={16} />
-                            ) : (
-                              <Edit size={16} />
-                            )}
-                          </button>
-                          <button
-                            className="ml-4 text-red-500 hover:text-red-400 transition-colors"
-                            onClick={() => handleDeleteTest(test._id)}
-                            title="Delete Test"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                      {/* Inline Delete Confirmation */}
+                      {deleteConfirmTestId === test._id && (
+                        <tr>
+                          <td colSpan={8} className="px-0 py-0">
+                            <div className="bg-gray-800 text-gray-300 border-l-4 border-red-500 m-2 p-4 rounded-lg animate-fadeIn">
+                              <div className="flex flex-col md:flex-row items-center justify-between">
+                                <div className="mb-3 md:mb-0">
+                                  <p className="font-medium">
+                                    Are you sure you want to delete test{" "}
+                                    <span className="text-red-400">
+                                      "{test.testName}"
+                                    </span>
+                                    ?
+                                  </p>
+                                  <p className="text-gray-400 text-sm mt-1">
+                                    This action cannot be undone.
+                                  </p>
+                                </div>
+                                <div className="flex space-x-3">
+                                  <button
+                                    onClick={() => handleCancelDeleteTest()}
+                                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      handleConfirmDeleteTest(test._id)
+                                    }
+                                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center"
+                                  >
+                                    <Trash2 size={16} className="mr-2" />
+                                    Confirm
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
