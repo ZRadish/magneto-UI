@@ -128,44 +128,6 @@ const AppRow: React.FC<{
     fetchTests();
   }, [app.id, isExpanded]);
 
-  // const handleFileDownload = async (e: React.MouseEvent, test: AppTest) => {
-  //   e.stopPropagation();
-  //   const token = localStorage.getItem("authToken");
-  //   if (!token) {
-  //     alert("Authentication token not found");
-  //     return;
-  //   }
-  //   if (!test.fileId) {
-  //     alert("No file available for download");
-  //     return;
-  //   }
-  //   try {
-  //     // Create a temporary anchor element for the download
-  //     const a = document.createElement("a");
-  //     // Set the href to the file download endpoint
-  //     a.href = `${import.meta.env.VITE_API_URL}/files/${test.fileId}`;
-  //     // Add the auth token to the href
-  //     if (token) {
-  //       a.href += `?token=${token}`;
-  //     }
-  //     // Set download attribute (optional filename)
-  //     if (test.fileName) {
-  //       a.download = test.fileName;
-  //     }
-  //     // Hide the anchor
-  //     a.style.display = "none";
-  //     // Add to document
-  //     document.body.appendChild(a);
-  //     // Trigger click
-  //     a.click();
-  //     // Cleanup
-  //     document.body.removeChild(a);
-  //   } catch (err) {
-  //     console.error("Error initiating download:", err);
-  //     alert("Failed to download file. Please try again.");
-  //   }
-  // };
-
   const handleInputFileDownload = async (
     e: React.MouseEvent,
     test: AppTest
@@ -521,10 +483,6 @@ const AppRow: React.FC<{
     }
   };
 
-  // function handleOpenDeleteModal(id: string) {
-  //   throw new Error("Function not implemented.");
-  // }
-
   return (
     <div className="border border-violet-900 rounded-2xl mb-6 hover:border-violet-700 transition-colors hover:shadow-xl hover:shadow-violet-900/50">
       <div
@@ -553,43 +511,48 @@ const AppRow: React.FC<{
           <span className="flex-grow text-lg text-gray-400">{app.name}</span>
         )}
 
-        {/* Edit & Save Buttons with larger icons */}
-        {isEditing ? (
+        {/* Actions group with consistent spacing - App level */}
+        <div className="flex items-center">
+          {/* Edit & Save Buttons with consistent spacing */}
+          {isEditing ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSaveAppName();
+              }}
+              className="ml-4 text-green-500 hover:text-green-400"
+            >
+              <Save size={24} />
+            </button>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditClick();
+              }}
+              className="ml-4 text-violet-500 hover:text-violet-400"
+            >
+              <Edit size={24} />
+            </button>
+          )}
           <button
             onClick={(e) => {
               e.stopPropagation();
-              handleSaveAppName();
+              handleDeleteApp(app.id); // Pass app ID to open delete modal
             }}
-            className="ml-4 text-green-500 hover:text-green-400"
+            className="ml-4 text-red-500 hover:text-red-400"
           >
-            <Save size={24} />
+            <Trash2 size={24} />
           </button>
-        ) : (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleEditClick();
-            }}
-            className="ml-4 text-violet-500 hover:text-violet-400"
-          >
-            <Edit size={24} />
-          </button>
-        )}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDeleteApp(app.id); // Pass app ID to open delete modal
-          }}
-          className="ml-4 text-red-500 hover:text-red-400"
-        >
-          <Trash2 size={24} />
-        </button>
 
-        {isExpanded ? (
-          <ChevronDown size={24} className="text-violet-500 ml-4" />
-        ) : (
-          <ChevronRight size={24} className="text-violet-500 ml-4" />
-        )}
+          <div className="ml-4">
+            {isExpanded ? (
+              <ChevronDown size={24} className="text-violet-500" />
+            ) : (
+              <ChevronRight size={24} className="text-violet-500" />
+            )}
+          </div>
+        </div>
       </div>
 
       {isExpanded && (
@@ -658,7 +621,7 @@ const AppRow: React.FC<{
                       <td className="p-3 text-base w-[150px]">
                         {editingTestId === test._id ? (
                           <input
-                            ref={testNameInputRef} // Attach ref here
+                            ref={testNameInputRef}
                             type="text"
                             value={editingTestName}
                             onChange={(e) => setEditingTestName(e.target.value)}
@@ -758,27 +721,28 @@ const AppRow: React.FC<{
                           )}
                         </div>
                       </td>
-                      <td className="p-3 flex items-center gap-3 pl-5">
-                        <button
-                          className="text-violet-500 hover:text-violet-400 transition-colors"
-                          onClick={() => handleEditTestName(test._id)}
-                        >
-                          {editingTestId === test._id ? (
-                            <Save size={16} />
-                          ) : (
-                            <Edit size={16} />
-                          )}
-                        </button>
-
-                        <button
-                          className="text-red-500 hover:text-red-400 transition-colors p-1 rounded-full"
-                          onClick={() => handleDeleteTest(test._id)}
-                          title="Delete Test"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </td>{" "}
-                      {/* Add the delete button here */}
+                      {/* Actions column with consistent spacing - Test level */}
+                      <td className="p-3">
+                        <div className="flex items-center ml-2">
+                          <button
+                            className="text-violet-500 hover:text-violet-400 transition-colors"
+                            onClick={() => handleEditTestName(test._id)}
+                          >
+                            {editingTestId === test._id ? (
+                              <Save size={16} />
+                            ) : (
+                              <Edit size={16} />
+                            )}
+                          </button>
+                          <button
+                            className="ml-4 text-red-500 hover:text-red-400 transition-colors"
+                            onClick={() => handleDeleteTest(test._id)}
+                            title="Delete Test"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
