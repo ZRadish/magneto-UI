@@ -17,42 +17,50 @@ const LoginPage = () => {
     setError(""); // Clear previous errors
 
     if (!email.trim() || !password.trim()) {
-        setError("Please enter both email and password.");
-        return;
+      setError("Please enter both email and password.");
+      return;
     }
 
     const formattedEmail = email.toLowerCase();
 
     try {
-        const response = await api.post("/user/login", { email: formattedEmail, password });
+      const response = await api.post("/user/login", { email, password });
 
-        console.log("API Response Data:", response.data);
+      console.log("API Response Data:", response.data);
 
-        const { user, token, error } = response.data;
+      const { user, token, error } = response.data;
 
-        if (error) {
-            setError(error === "Invalid login credentials"
-                ? "Incorrect email or password. Please try again."
-                : error
-            );
+      if (error) {
+        setError(
+          error === "Invalid login credentials"
+            ? "Incorrect email or password. Please try again."
+            : error
+        );
+      } else {
+        localStorage.setItem("authToken", token);
+        localStorage.setItem("UserId", user.id);
+        localStorage.setItem("username", user.firstName);
+
+        console.log("Token stored:", token);
+        //navigate("/dashboard");
+        const isNewUser =
+          localStorage.getItem(`new_user_${user.id}`) === "true";
+        if (isNewUser) {
+          // Remove the new user flag
+          localStorage.removeItem(`new_user_${user.id}`);
+          navigate("/guidance");
         } else {
-            localStorage.setItem("authToken", token);
-            localStorage.setItem("UserId", user.id);
-            localStorage.setItem("firstName", user.firstName);
-            localStorage.setItem("email", user.email);
-            localStorage.setItem("lastName", user.lastName);
-
-            console.log("Token stored:", token);
-            navigate("/dashboard");
+          navigate("/dashboard");
         }
+      }
     } catch (err: any) {
-        if (err.response?.status === 401) {
-            setError("Incorrect email or password. Please try again.");
-        } else {
-            setError("An unexpected error occurred. Please try again later.");
-        }
+      if (err.response?.status === 401) {
+        setError("Incorrect email or password. Please try again.");
+      } else {
+        setError("An unexpected error occurred. Please try again later.");
+      }
     }
-};
+  };
 
   return (
     //bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity
