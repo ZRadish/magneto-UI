@@ -26,9 +26,10 @@ const LoginPage = () => {
     try {
       const response = await api.post("/user/login", { email: formattedEmail, password });
 
-      console.log("API Response Data:", response.data);
+      //console.log("API Response Data:", response.data);
 
-      const { user, token, error } = response.data;
+      const { user, token, dateJoined, error } = response.data;
+
 
       if (error) {
         setError(
@@ -40,8 +41,11 @@ const LoginPage = () => {
         localStorage.setItem("authToken", token);
         localStorage.setItem("UserId", user.id);
         localStorage.setItem("username", user.firstName);
+        localStorage.setItem("firstName", user.firstName);
+        localStorage.setItem("email", user.email);
+        localStorage.setItem("lastName", user.lastName);
+        localStorage.setItem("createdAt", dateJoined.split('T')[0]);
 
-        console.log("Token stored:", token);
         //navigate("/dashboard");
         const isNewUser =
           localStorage.getItem(`new_user_${user.id}`) === "true";
@@ -58,6 +62,9 @@ const LoginPage = () => {
         setError("Incorrect email or password. Please try again.");
       } else {
         setError("An unexpected error occurred. Please try again later.");
+        console.error("Login error:", err);
+        console.error("Error response:", err.response);
+        console.error("Error message:", err.message);
       }
     }
   };

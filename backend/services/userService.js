@@ -32,7 +32,10 @@ export const loginUserService = async (email, password) => {
       { expiresIn: '24h' } // Token expiration (1 hour)
     );
 
-    return { user, token }; // Return user and token
+
+    const dateJoined = user.createdAt.toISOString()
+
+    return { user, token, dateJoined }; // Return user object and token
   } catch (error) {
     throw new Error(error.message);
   }
