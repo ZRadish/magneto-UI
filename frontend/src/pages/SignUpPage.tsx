@@ -63,9 +63,9 @@ const SignUpPage = () => {
     try {
       // Step 1: Register the user
       const response = await api.post("/user/register", {
-        firstName,
-        lastName,
-        email,
+        firstName: formattedFirstName,
+        lastName: formattedLastName,
+        email: formattedEmail,
         password,
       });
 

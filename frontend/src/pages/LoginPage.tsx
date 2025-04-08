@@ -21,10 +21,10 @@ const LoginPage = () => {
       return;
     }
 
-    const formattedEmail = email.toLowerCase();
+    const formattedEmail = email.trim().toLowerCase();
 
     try {
-      const response = await api.post("/user/login", { email, password });
+      const response = await api.post("/user/login", { email: formattedEmail, password });
 
       console.log("API Response Data:", response.data);
 
