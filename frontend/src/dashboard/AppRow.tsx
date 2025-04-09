@@ -29,16 +29,20 @@ const AppRow: React.FC<{
   onUpdateAppName: (appId: string, newName: string) => void;
   onUpdateDescription: (appId: string, newDescription: string) => void;
   handleDeleteApp: (appId: string) => void;
+  expandApp?: boolean;
+  testIdToHighlight?: string;
 }> = ({
   app,
   onUpdateNotes,
   onUpdateAppName,
   onUpdateDescription,
   handleDeleteApp,
+  expandApp = false,
+  testIdToHighlight,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newAppName, setNewAppName] = useState(app.name);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(expandApp);
   const [activeModal, setActiveModal] = useState<{
     type: "notes" | "results";
     testId: string;
@@ -52,8 +56,11 @@ const AppRow: React.FC<{
   const [newDescription, setNewDescription] = useState(app.description);
   const descriptionInputRef = useRef<HTMLInputElement>(null);
   const [editingTestId, setEditingTestId] = useState<string | null>(null);
-  const [editingTestName, setEditingTestName] = useState<string>("");
+  const [, setEditingTestName] = useState<string>("");
   const testNameInputRef = useRef<HTMLInputElement>(null);
+  const [deleteConfirmTestId, setDeleteConfirmTestId] = useState<string | null>(
+    null
+  );
 
   const handleEditClick = () => {
     setIsEditing(true);
@@ -62,6 +69,15 @@ const AppRow: React.FC<{
     }, 0);
   };
   const appNameInputRef = useRef<HTMLInputElement>(null);
+
+  const [testProgress, setTestProgress] = useState<{ [key: string]: number }>(
+    () => JSON.parse(localStorage.getItem("testProgress") || "{}")
+  );
+  const progressIntervals = useRef<{ [key: string]: NodeJS.Timeout }>({});
+  const [completedTests, setCompletedTests] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem("completedTests");
+    return saved ? new Set(JSON.parse(saved)) : new Set<string>();
+  });
 
   useEffect(() => {
     const fetchTests = async () => {
@@ -127,6 +143,92 @@ const AppRow: React.FC<{
 
     fetchTests();
   }, [app.id, isExpanded]);
+
+  useEffect(() => {
+    if (expandApp) {
+      setIsExpanded(true);
+    }
+  }, [expandApp]);
+
+  const testRefs = useRef<{ [key: string]: HTMLTableRowElement | null }>({});
+  useEffect(() => {
+    const highlightedTestId = tests.find((test) =>
+      isHighlightedTest(test._id)
+    )?._id;
+    if (highlightedTestId && testRefs.current[highlightedTestId]) {
+      testRefs.current[highlightedTestId]?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [tests, testProgress]);
+
+  useEffect(() => {
+    if (
+      testIdToHighlight &&
+      tests.some((test) => test._id === testIdToHighlight) &&
+      !completedTests.has(testIdToHighlight)
+    ) {
+      const highlightedTest = tests.find(
+        (test) => test._id === testIdToHighlight
+      );
+
+      // Set up progress tracking if the test exists
+      if (highlightedTest) {
+        // Clear any existing interval for this test
+        if (progressIntervals.current[testIdToHighlight]) {
+          clearInterval(progressIntervals.current[testIdToHighlight]);
+        }
+
+        // Start at 0 progress
+        setTestProgress((prev) => ({ ...prev, [testIdToHighlight]: 0 }));
+
+        // Set up the progress interval - update every 300ms for 30 seconds total
+        const interval = setInterval(() => {
+          setTestProgress((prev) => {
+            const currentProgress = prev[testIdToHighlight] || 0;
+            const newProgress = currentProgress + 100 / 100; // 100 steps to reach 100%
+
+            // If we've reached 100%, clear the interval and mark as completed
+            if (newProgress >= 100) {
+              clearInterval(progressIntervals.current[testIdToHighlight]);
+
+              // Update the test status to completed
+              setTests((prevTests) =>
+                prevTests.map((test) =>
+                  test._id === testIdToHighlight
+                    ? { ...test, status: "completed" }
+                    : test
+                )
+              );
+
+              // Mark this test as completed and save to localStorage
+              const newCompleted = new Set(completedTests);
+              newCompleted.add(testIdToHighlight);
+              setCompletedTests(newCompleted);
+              localStorage.setItem(
+                "completedTests",
+                JSON.stringify([...newCompleted])
+              );
+
+              return { ...prev, [testIdToHighlight]: 100 };
+            }
+            return { ...prev, [testIdToHighlight]: newProgress };
+          });
+        }, 300); // 300ms * 100 steps = 30 seconds
+
+        // Store the interval reference
+        progressIntervals.current[testIdToHighlight] = interval;
+
+        // Clean up interval on unmount
+        return () => clearInterval(interval);
+      }
+    }
+  }, [testIdToHighlight, tests, completedTests]);
+
+  const isHighlightedTest = (testId: string) => {
+    return testId === testIdToHighlight && !completedTests.has(testId);
+  };
 
   // const handleFileDownload = async (e: React.MouseEvent, test: AppTest) => {
   //   e.stopPropagation();
@@ -429,39 +531,48 @@ const AppRow: React.FC<{
     }
   };
 
-  const handleDeleteTest = async (testId: string) => {
-    if (window.confirm("Are you sure you want to delete this test?")) {
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        alert("Authentication token not found");
-        return;
-      }
+  const handleDeleteTestClick = (testId: string) => {
+    // Toggle the confirmation - if already showing for this test, hide it
+    setDeleteConfirmTestId(deleteConfirmTestId === testId ? null : testId);
+  };
 
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/test/${testId}`,
-          {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to delete test: ${response.status}`);
-        }
-
-        // Remove the deleted test from the local state
-        setTests((prevTests) =>
-          prevTests.filter((test) => test._id !== testId)
-        );
-      } catch (error) {
-        console.error("Error deleting test:", error);
-        alert("Failed to delete the test. Please try again.");
-      }
+  const handleConfirmDeleteTest = async (testId: string) => {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      alert("Authentication token not found");
+      return;
     }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/test/${testId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete test: ${response.status}`);
+      }
+
+      // Remove the deleted test from the local state
+      setTests((prevTests) => prevTests.filter((test) => test._id !== testId));
+
+      // Clear the confirmation state
+      setDeleteConfirmTestId(null);
+    } catch (error) {
+      console.error("Error deleting test:", error);
+      alert("Failed to delete the test. Please try again.");
+    }
+  };
+
+  const handleCancelDeleteTest = () => {
+    // Hide the confirmation
+    setDeleteConfirmTestId(null);
   };
 
   const handleEditTestName = (testId: string) => {
@@ -475,55 +586,6 @@ const AppRow: React.FC<{
       }, 0);
     }
   };
-
-  const handleSaveTestName = async (testId: string) => {
-    if (!editingTestName.trim()) {
-      alert("Test name cannot be empty.");
-      return;
-    }
-
-    const token = localStorage.getItem("authToken");
-    if (!token) {
-      alert("Authentication token not found.");
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/test/${testId}/name`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ testName: editingTestName }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to update test name: ${response.status}`);
-      }
-
-      const updatedTest = await response.json();
-      setTests((prevTests) =>
-        prevTests.map((test) =>
-          test._id === testId
-            ? { ...test, testName: updatedTest.test.testName }
-            : test
-        )
-      );
-
-      setEditingTestId(null);
-    } catch (error) {
-      console.error("Error updating test name:", error);
-      alert("Failed to update test name. Please try again.");
-    }
-  };
-
-  // function handleOpenDeleteModal(id: string) {
-  //   throw new Error("Function not implemented.");
-  // }
 
   return (
     <div className="border border-violet-900 rounded-2xl mb-6 hover:border-violet-700 transition-colors hover:shadow-xl hover:shadow-violet-900/50">
@@ -553,43 +615,48 @@ const AppRow: React.FC<{
           <span className="flex-grow text-lg text-gray-400">{app.name}</span>
         )}
 
-        {/* Edit & Save Buttons with larger icons */}
-        {isEditing ? (
+        {/* Actions group with consistent spacing - App level */}
+        <div className="flex items-center">
+          {/* Edit & Save Buttons with consistent spacing */}
+          {isEditing ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSaveAppName();
+              }}
+              className="ml-4 text-green-500 hover:text-green-400"
+            >
+              <Save size={24} />
+            </button>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditClick();
+              }}
+              className="ml-4 text-violet-500 hover:text-violet-400"
+            >
+              <Edit size={24} />
+            </button>
+          )}
           <button
             onClick={(e) => {
               e.stopPropagation();
-              handleSaveAppName();
+              handleDeleteApp(app.id); // Pass app ID to open delete modal
             }}
-            className="ml-4 text-green-500 hover:text-green-400"
+            className="ml-4 text-red-500 hover:text-red-400"
           >
-            <Save size={24} />
+            <Trash2 size={24} />
           </button>
-        ) : (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleEditClick();
-            }}
-            className="ml-4 text-violet-500 hover:text-violet-400"
-          >
-            <Edit size={24} />
-          </button>
-        )}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDeleteApp(app.id); // Pass app ID to open delete modal
-          }}
-          className="ml-4 text-red-500 hover:text-red-400"
-        >
-          <Trash2 size={24} />
-        </button>
 
-        {isExpanded ? (
-          <ChevronDown size={24} className="text-violet-500 ml-4" />
-        ) : (
-          <ChevronRight size={24} className="text-violet-500 ml-4" />
-        )}
+          <div className="ml-4">
+            {isExpanded ? (
+              <ChevronDown size={24} className="text-violet-500" />
+            ) : (
+              <ChevronRight size={24} className="text-violet-500" />
+            )}
+          </div>
+        </div>
       </div>
 
       {isExpanded && (
@@ -650,136 +717,209 @@ const AppRow: React.FC<{
                   </tr>
                 </thead>
                 <tbody className="text-gray-400">
-                  {tests.map((test) => (
-                    <tr
-                      key={test._id}
-                      className="hover:bg-gray-800/50 transition-colors rounded-2xl"
-                    >
-                      <td className="p-3 text-base w-[150px]">
-                        {editingTestId === test._id ? (
-                          <input
-                            ref={testNameInputRef} // Attach ref here
-                            type="text"
-                            value={editingTestName}
-                            onChange={(e) => setEditingTestName(e.target.value)}
-                            className="bg-transparent border border-violet-700 rounded px-2 py-1 text-gray-400 w-full focus:outline-none"
-                            onBlur={() => handleSaveTestName(test._id)}
-                            onKeyDown={(e) =>
-                              e.key === "Enter" && handleSaveTestName(test._id)
-                            }
-                          />
-                        ) : (
-                          test.testName
-                        )}
-                      </td>
-                      <td className="p-3">
-                        {test.fileId ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-400">
-                              {test.fileName}
-                            </span>
-                            <button
-                              className="text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20"
-                              onClick={(e) => handleInputFileDownload(e, test)}
-                              title="Download File"
+                  {tests.map((test, index) => (
+                    <React.Fragment key={test._id}>
+                      <tr
+                        ref={(el) => (testRefs.current[test._id] = el)}
+                        className={`hover:bg-gray-800/50 transition-colors ${
+                          isHighlightedTest(test._id)
+                            ? ""
+                            : index === 0
+                            ? "first-test-row"
+                            : ""
+                        }`}
+                        style={{ overflow: "hidden", borderRadius: "24px" }}
+                      >
+                        {test.status === "pending" &&
+                        isHighlightedTest(test._id) ? (
+                          // Pending test row with progress bar (exactly as your example)
+                          <td colSpan={8} className="p-4">
+                            <div
+                              className="bg-violet-900/20 border-2 border-violet-500 rounded-3xl p-4"
+                              style={{ overflow: "hidden" }} // Keeps content inside rounded borders
                             >
-                              <Download size={16} />
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-red-500">No file</span>
-                        )}
-                      </td>
-                      <td className="p-3">
-                        {new Date(test.createdAt).toLocaleString()}
-                      </td>
-                      <td className="p-3">
-                        <span
-                          className={`px-3 py-1.5 rounded-full text-xs ${
-                            test.status === "completed"
-                              ? "bg-green-500/20 text-green-400"
-                              : "bg-yellow-500/20 text-yellow-400"
-                          }`}
-                        >
-                          {test.status}
-                        </span>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex flex-col gap-1.5">
-                          {test.oracleSelected &&
-                            (() => {
-                              const colorClass =
-                                {
-                                  "Theme Check":
-                                    "bg-orange-900/20 text-center text-orange-400",
-                                  "Back Button":
-                                    "bg-blue-900/20 text-center text-blue-400",
-                                  "Language Detection":
-                                    "bg-pink-900/20 text-center text-pink-400",
-                                  "User Input":
-                                    "bg-yellow-900/20 text-center text-yellow-400",
-                                }[test.oracleSelected] ||
-                                "bg-violet-900/20 text-center text-violet-400";
-
-                              return (
-                                <span
-                                  className={`px-3 py-1.5 ${colorClass} rounded-full text-xs w-44`}
-                                >
-                                  {test.oracleSelected}
+                              <div className="flex items-center space-x-4 test-progress-bar">
+                                <span className="text-yellow-600 w-1/4">
+                                  {test.testName}
                                 </span>
-                              );
-                            })()}
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <button
-                          className="text-violet-500 hover:text-violet-400 transition-colors"
-                          onClick={() => openModal("notes", test._id)}
-                        >
-                          {test.notes ? "View/Edit" : "Add Notes"}
-                        </button>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-center gap-2">
-                          <button
-                            className="text-violet-500 hover:text-violet-400 transition-colors"
-                            onClick={() => openModal("results", test._id)}
-                          >
-                            View
-                          </button>
-                          {test.result && (
-                            <button
-                              className="text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20"
-                              onClick={(e) => handleResultsDownload(e, test)}
-                              title="Download Results"
-                            >
-                              <Download size={16} />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-3 flex items-center gap-3 pl-5">
-                        <button
-                          className="text-violet-500 hover:text-violet-400 transition-colors"
-                          onClick={() => handleEditTestName(test._id)}
-                        >
-                          {editingTestId === test._id ? (
-                            <Save size={16} />
-                          ) : (
-                            <Edit size={16} />
-                          )}
-                        </button>
+                                <div className="w-full bg-gray-700 rounded-full h-2.5">
+                                  <div
+                                    className="bg-yellow-600 h-2.5 rounded-full"
+                                    style={{
+                                      width: `${testProgress[test._id] || 0}%`,
+                                    }}
+                                  ></div>
+                                </div>
+                                <span className="text-gray-400 w-1/12">
+                                  {Math.round(testProgress[test._id] || 0)}%
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                        ) : (
+                          <>
+                            <td className="p-3 text-base">{test.testName}</td>
+                            <td className="p-3">
+                              {test.fileId ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-gray-400">
+                                    {test.fileName}
+                                  </span>
+                                  <button
+                                    className="text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20"
+                                    onClick={(e) =>
+                                      handleInputFileDownload(e, test)
+                                    }
+                                    title="Download File"
+                                  >
+                                    <Download size={16} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-sm text-red-500">
+                                  No file
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3">
+                              {new Date(test.createdAt).toLocaleString()}
+                            </td>
+                            <td className="p-3">
+                              <span
+                                className={`px-3 py-1.5 rounded-full text-xs ${
+                                  test.status === "completed"
+                                    ? "bg-green-500/20 text-green-400"
+                                    : "bg-yellow-500/20 text-yellow-400"
+                                }`}
+                              >
+                                {test.status}
+                              </span>
+                            </td>
+                            <td className="p-3">
+                              <div className="flex flex-col gap-1.5">
+                                {test.oracleSelected &&
+                                  (() => {
+                                    const colorClass =
+                                      {
+                                        "Theme Check":
+                                          "bg-orange-900/20 text-center text-orange-400",
+                                        "Back Button":
+                                          "bg-blue-900/20 text-center text-blue-400",
+                                        "Language Detection":
+                                          "bg-pink-900/20 text-center text-pink-400",
+                                        "User Input":
+                                          "bg-yellow-900/20 text-center text-yellow-400",
+                                      }[test.oracleSelected] ||
+                                      "bg-violet-900/20 text-center text-violet-400";
 
-                        <button
-                          className="text-red-500 hover:text-red-400 transition-colors p-1 rounded-full"
-                          onClick={() => handleDeleteTest(test._id)}
-                          title="Delete Test"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </td>{" "}
-                      {/* Add the delete button here */}
-                    </tr>
+                                    return (
+                                      <span
+                                        className={`px-3 py-1.5 ${colorClass} rounded-full text-xs w-44`}
+                                      >
+                                        {test.oracleSelected}
+                                      </span>
+                                    );
+                                  })()}
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <button
+                                className="text-violet-500 hover:text-violet-400 transition-colors"
+                                onClick={() => openModal("notes", test._id)}
+                              >
+                                {test.notes ? "View/Edit" : "Add Notes"}
+                              </button>
+                            </td>
+                            <td className="p-3">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  className="text-violet-500 hover:text-violet-400 transition-colors"
+                                  onClick={() => openModal("results", test._id)}
+                                >
+                                  View
+                                </button>
+                                {test.result && (
+                                  <button
+                                    className="text-violet-500 hover:text-violet-400 transition-colors p-1 rounded-full hover:bg-violet-900/20"
+                                    onClick={(e) =>
+                                      handleResultsDownload(e, test)
+                                    }
+                                    title="Download Results"
+                                  >
+                                    <Download size={16} />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                            {/* Actions column with consistent spacing - Test level */}
+                            <td className="p-3">
+                              <div className="flex items-center ml-2">
+                                <button
+                                  className="text-violet-500 hover:text-violet-400 transition-colors"
+                                  onClick={() => handleEditTestName(test._id)}
+                                >
+                                  {editingTestId === test._id ? (
+                                    <Save size={16} />
+                                  ) : (
+                                    <Edit size={16} />
+                                  )}
+                                </button>
+                                <button
+                                  className="ml-4 text-red-500 hover:text-red-400 transition-colors"
+                                  onClick={() =>
+                                    handleDeleteTestClick(test._id)
+                                  }
+                                  title="Delete Test"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </>
+                        )}
+                      </tr>
+
+                      {/* Inline Delete Confirmation */}
+                      {deleteConfirmTestId === test._id && (
+                        <tr>
+                          <td colSpan={8} className="px-0 py-0">
+                            <div className="bg-gray-800 text-gray-300 border-l-4 border-red-500 m-2 p-4 rounded-lg animate-fadeIn">
+                              <div className="flex flex-col md:flex-row items-center justify-between">
+                                <div className="mb-3 md:mb-0">
+                                  <p className="font-medium">
+                                    Are you sure you want to delete test{" "}
+                                    <span className="text-red-400">
+                                      "{test.testName}"
+                                    </span>
+                                    ?
+                                  </p>
+                                  <p className="text-gray-400 text-sm mt-1">
+                                    This action cannot be undone.
+                                  </p>
+                                </div>
+                                <div className="flex space-x-3">
+                                  <button
+                                    onClick={() => handleCancelDeleteTest()}
+                                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      handleConfirmDeleteTest(test._id)
+                                    }
+                                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center"
+                                  >
+                                    <Trash2 size={16} className="mr-2" />
+                                    Confirm
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>

@@ -23,7 +23,9 @@ const SideBar = () => {
   useEffect(() => {
     const storedUserId = localStorage.getItem("UserId");
     const storedFirstName = localStorage.getItem("firstName") || "Guest";
-    const formattedFirstName = storedFirstName.charAt(0).toUpperCase() + storedFirstName.slice(1).toLowerCase();
+    const formattedFirstName =
+      storedFirstName.charAt(0).toUpperCase() +
+      storedFirstName.slice(1).toLowerCase();
 
     if (storedUserId) {
       setUserId(Number(storedUserId));
@@ -34,7 +36,9 @@ const SideBar = () => {
 
     const updateUser = () => {
       const storedFirstName = localStorage.getItem("firstName") || "Guest";
-      const formattedFirstName = storedFirstName.charAt(0).toUpperCase() + storedFirstName.slice(1).toLowerCase();
+      const formattedFirstName =
+        storedFirstName.charAt(0).toUpperCase() +
+        storedFirstName.slice(1).toLowerCase();
       setUsername(formattedFirstName);
     };
 
@@ -46,8 +50,8 @@ const SideBar = () => {
 
     // Cleanup event listener on unmount
     return () => {
-        window.removeEventListener("userUpdated", updateUser);
-  };
+      window.removeEventListener("userUpdated", updateUser);
+    };
   }, []);
 
   useEffect(() => {
@@ -189,7 +193,7 @@ const SideBar = () => {
               <ChartBarIcon className="stroke-inherit stroke-[0.75] min-w-8 w-8" />
             </SideBarLink>
             <SideBarLink
-              name="Traceplayer Tutorial"
+              name="TraceReplayer Tutorial"
               isOpen={isOpen}
               to="/tutorial"
               onClick={handleTutorialClick}

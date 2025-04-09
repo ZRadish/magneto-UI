@@ -1,9 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { Play, Plus, Search } from "lucide-react";
+import { Play, Plus, Search, AlertCircle } from "lucide-react";
 import { Folder, ChevronRight } from "lucide-react";
 import SideBar from "../components/SideBar";
 import AppRow from "./AppRow";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Location } from "react-router-dom";
+
+interface LocationWithState extends Location {
+  state: {
+    appId?: string;
+    testId?: string;
+    fileName?: string;
+    expandAppFolder?: boolean;
+    fromUpload?: boolean;
+  } | null;
+}
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -36,6 +46,11 @@ const Dashboard: React.FC = () => {
   const [apps, setApps] = useState<
     { id: string; name: string; description: string; tests: any[] }[]
   >([]);
+
+  const location = useLocation() as LocationWithState;
+  const appIdFromUpload = location.state?.appId;
+  const testIdFromUpload = location.state?.testId;
+  const expandAppFolder = location.state?.expandAppFolder;
 
   // Oracle options
   const oracleOptions = [
@@ -99,6 +114,13 @@ const Dashboard: React.FC = () => {
     fetchUserApps();
   }, []);
 
+  useEffect(() => {
+    if (expandAppFolder && appIdFromUpload) {
+      setSelectedAppId(appIdFromUpload);
+    }
+  }, [expandAppFolder, appIdFromUpload]);
+  
+
   const handleOpenRunTestModal = () => {
     resetModalState(); // Reset all state when opening the modal
     setIsRunTestModalOpen(true);
@@ -120,11 +142,11 @@ const Dashboard: React.FC = () => {
     resetModalState();
   };
 
-  const handleAppSelect = (appId: string) => {
-    setSelectedAppId(appId);
-    // Don't automatically go to the next step, just select the app
-    setErrors({}); // Clear any previous errors
-  };
+  // const msOverFlSelect = (appId: string) => {
+  //   setSelectedAppId(appId);
+  //   // Don't automatically go to the next step, just select the app
+  //   setErrors({}); // Clear any previous errors
+  // };
 
   const resetTestState = () => {
     setTestName("");
@@ -381,6 +403,7 @@ const Dashboard: React.FC = () => {
         } else {
           console.error("An unknown error occurred:", error);
           alert("Failed to fetch apps. Please try again.");
+          alert("Failed to fetch apps. Please try again.");
         }
       }
 
@@ -395,13 +418,18 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleAppSelect = (appId: string) => {
+    setSelectedAppId(appId);
+    // Don't automatically go to the next step, just select the app
+    setErrors({}); // Clear any previous errors
+  };
+
   // Filter apps based on search query
-  const filteredApps = apps.filter(
-    (app) =>
-      app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.description.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredApps = apps.filter((app) =>
+    app.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Render the modal content based on the current step
   const renderModalContent = () => {
     switch (currentStep) {
       case "select-app":
@@ -519,6 +547,41 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // Render the Direction Box only on the first step
+  const renderDirectionBox = () => {
+    if (currentStep === "select-app") {
+      return (
+        <div className="bg-gray-900 p-6 rounded-lg w-1/2 border border-amber-600">
+          <div className="flex items-start">
+            <AlertCircle
+              className="text-amber-500 mr-2 mt-1 flex-shrink-0"
+              size={20}
+            />
+            <div>
+              <h3 className="text-lg font-semibold text-amber-500 mb-2">
+                Need Input Files?
+              </h3>
+              <p className="text-gray-300 mb-4">
+                Before running a test, you need to generate input files.
+              </p>
+              <p className="text-gray-300 mb-4">
+                If you haven't generated them yet, go to the{" "}
+                <a
+                  href="/tutorial"
+                  className="text-amber-500 hover:text-amber-400 underline"
+                >
+                  TraceReplayer Tutorial
+                </a>{" "}
+                Page to create them.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 to-gray-950">
       <SideBar />
@@ -546,7 +609,7 @@ const Dashboard: React.FC = () => {
         <div className="relative mb-4">
           <input
             type="text"
-            placeholder="Search apps by name or description..."
+            placeholder="Search apps by name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full px-4 py-2 pl-10 bg-gray-800 text-gray-200 rounded-lg border border-violet-900 focus:outline-none focus:border-purple-600"
@@ -580,16 +643,24 @@ const Dashboard: React.FC = () => {
                   onUpdateAppName={handleUpdateAppName}
                   onUpdateDescription={handleUpdateDescription}
                   handleDeleteApp={handleOpenDeleteModal}
+                  expandApp={expandAppFolder && app.id === appIdFromUpload}
+                  testIdToHighlight={testIdFromUpload}
                 />
               </div>
             ))
           )}
         </div>
 
-        {/* Run Test Modal */}
+        {/* Run Test Modal with Direction Box */}
         {isRunTestModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="relative bg-gray-900 p-6 rounded-lg max-w-2xl w-full border border-violet-900">
+            {/* Direction Box - Positioned in the top right */}
+            <div className="absolute w-0.75 top-20 mt-2 right-[-220px]">
+              {renderDirectionBox()}
+            </div>
+
+            {/* Main Modal - Centered */}
+            <div className="bg-gray-900 p-6 rounded-lg max-w-2xl w-full border border-violet-900">
               {renderModalContent()}
 
               {/* Modal Actions */}

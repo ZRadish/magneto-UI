@@ -198,7 +198,7 @@ const GuidancePage: React.FC = () => {
     // When tour is finished, navigate to dashboard
     if (status === "finished" || status === "skipped") {
       setRunTour(false);
-      navigate("/dashboard");
+      navigate("/tutorial");
     }
   };
 
@@ -406,19 +406,18 @@ const GuidancePage: React.FC = () => {
                                     </button>
                                   </div>
                                 </td>
-                                <td className="p-3 flex items-center gap-3 pl-5">
-                                  <button
-                                    className="test-edit-icon text-violet-500 hover:text-violet-400 transition-colors opacity-50"
-                                    title="Edit Test Name"
-                                  >
-                                    <Edit size={16} />
-                                  </button>
-                                  <button
-                                    className="test-delete-icon text-red-500 hover:text-red-400 transition-colors p-1 rounded-full opacity-50 cursor-not-allowed"
-                                    title="Delete Test"
-                                  >
-                                    <Trash2 size={16} />
-                                  </button>
+                                <td className="p-3">
+                                  <div className="flex items-center ml-2">
+                                    <button className="test-edit-icon text-violet-500 hover:text-violet-400 transition-colors">
+                                      <Edit size={16} />
+                                    </button>
+                                    <button
+                                      className="ml-4 test-delete-icon text-red-500 hover:text-red-400 transition-colors"
+                                      title="Delete Test"
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </div>
                                 </td>
                               </>
                             )}
