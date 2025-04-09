@@ -24,9 +24,12 @@ const LoginPage = () => {
     const formattedEmail = email.trim().toLowerCase();
 
     try {
-      const response = await api.post("/user/login", { email: formattedEmail, password });
+      const response = await api.post("/user/login", {
+        email: formattedEmail,
+        password,
+      });
 
-        console.log("API Response Data:", response.data);
+      console.log("API Response Data:", response.data);
 
       const { user, token, error } = response.data;
 
@@ -60,7 +63,7 @@ const LoginPage = () => {
         setError("An unexpected error occurred. Please try again later.");
       }
     }
-};
+  };
 
   return (
     //bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity
