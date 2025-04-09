@@ -119,7 +119,6 @@ const Dashboard: React.FC = () => {
       setSelectedAppId(appIdFromUpload);
     }
   }, [expandAppFolder, appIdFromUpload]);
-  
 
   const handleOpenRunTestModal = () => {
     resetModalState(); // Reset all state when opening the modal
@@ -142,11 +141,11 @@ const Dashboard: React.FC = () => {
     resetModalState();
   };
 
-  // const msOverFlSelect = (appId: string) => {
-  //   setSelectedAppId(appId);
-  //   // Don't automatically go to the next step, just select the app
-  //   setErrors({}); // Clear any previous errors
-  // };
+  const msOverFlSelect = (appId: string) => {
+    setSelectedAppId(appId);
+    // Don't automatically go to the next step, just select the app
+    setErrors({}); // Clear any previous errors
+  };
 
   const resetTestState = () => {
     setTestName("");
@@ -403,7 +402,6 @@ const Dashboard: React.FC = () => {
         } else {
           console.error("An unknown error occurred:", error);
           alert("Failed to fetch apps. Please try again.");
-          alert("Failed to fetch apps. Please try again.");
         }
       }
 
@@ -434,13 +432,9 @@ const Dashboard: React.FC = () => {
     switch (currentStep) {
       case "select-app":
         return (
-          <>
-            <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
-              Select App
-            </h2>
-            <p className="text-gray-400 mb-4">
-              Select an app folder to configure and run the test.
-            </p>
+          <div className="relative">
+            {" "}
+            {/* Make modal content relative for button anchoring */}
             <button
               onClick={handleOpenNewModal}
               className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2"
@@ -448,6 +442,12 @@ const Dashboard: React.FC = () => {
               <Plus size={16} />
               <span>New</span>
             </button>
+            <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
+              Select App
+            </h2>
+            <p className="text-gray-400 mb-4">
+              Select an app folder to configure and run the test.
+            </p>
             <div
               className="bg-gray-800 p-4 rounded-lg max-h-[60vh] overflow-y-auto mb-6"
               style={{
@@ -476,7 +476,7 @@ const Dashboard: React.FC = () => {
             {errors.app && (
               <p className="text-red-500 mb-4 mt-2">{errors.app}</p>
             )}
-          </>
+          </div>
         );
 
       case "create-test":
