@@ -56,7 +56,7 @@ const AppRow: React.FC<{
   const [newDescription, setNewDescription] = useState(app.description);
   const descriptionInputRef = useRef<HTMLInputElement>(null);
   const [editingTestId, setEditingTestId] = useState<string | null>(null);
-  const [, setEditingTestName] = useState<string>("");
+  const [editingTestName, setEditingTestName] = useState<string>("");
   const testNameInputRef = useRef<HTMLInputElement>(null);
   const [deleteConfirmTestId, setDeleteConfirmTestId] = useState<string | null>(
     null
@@ -587,6 +587,51 @@ const AppRow: React.FC<{
     }
   };
 
+  const handleSaveTestName = async (testId: string) => {
+    if (!editingTestName.trim()) {
+      alert("Test name cannot be empty.");
+      return;
+    }
+
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      alert("Authentication token not found.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/test/${testId}/name`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ testName: editingTestName }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to update test name: ${response.status}`);
+      }
+
+      const updatedTest = await response.json();
+      setTests((prevTests) =>
+        prevTests.map((test) =>
+          test._id === testId
+            ? { ...test, testName: updatedTest.test.testName }
+            : test
+        )
+      );
+
+      setEditingTestId(null);
+    } catch (error) {
+      console.error("Error updating test name:", error);
+      alert("Failed to update test name. Please try again.");
+    }
+  };
+
   return (
     <div className="border border-violet-900 rounded-2xl mb-6 hover:border-violet-700 transition-colors hover:shadow-xl hover:shadow-violet-900/50">
       <div
@@ -758,7 +803,28 @@ const AppRow: React.FC<{
                           </td>
                         ) : (
                           <>
-                            <td className="p-3 text-base">{test.testName}</td>
+                            <td className="p-3 text-base w-[150px]">
+                              {" "}
+                              {editingTestId === test._id ? (
+                                <input
+                                  ref={testNameInputRef} // Attach ref here
+                                  type="text"
+                                  value={editingTestName}
+                                  onChange={(e) =>
+                                    setEditingTestName(e.target.value)
+                                  }
+                                  className="bg-transparent border border-violet-700 rounded px-2 py-1 text-gray-400 w-full focus:outline-none"
+                                  onBlur={() => handleSaveTestName(test._id)}
+                                  onKeyDown={(e) =>
+                                    e.key === "Enter" &&
+                                    handleSaveTestName(test._id)
+                                  }
+                                />
+                              ) : (
+                                test.testName
+                              )}
+                            </td>
+
                             <td className="p-3">
                               {test.fileId ? (
                                 <div className="flex items-center gap-2">
@@ -781,6 +847,7 @@ const AppRow: React.FC<{
                                 </span>
                               )}
                             </td>
+
                             <td className="p-3">
                               {new Date(test.createdAt).toLocaleString()}
                             </td>
@@ -863,7 +930,7 @@ const AppRow: React.FC<{
                                   ) : (
                                     <Edit size={16} />
                                   )}
-                                </button>
+                                </button>{" "}
                                 <button
                                   className="ml-4 text-red-500 hover:text-red-400 transition-colors"
                                   onClick={() =>
