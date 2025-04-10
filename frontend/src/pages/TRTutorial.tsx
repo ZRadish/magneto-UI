@@ -15,8 +15,6 @@ import {
   Image,
   FileQuestion,
   File,
-  ArrowRight,
-  CircleArrowRight,
   ArrowRightCircle,
 } from "lucide-react";
 
@@ -765,7 +763,7 @@ const TutorialPage = () => {
               <div className="flex justify-center mt-4">
                 <button
                   onClick={handleArrowClick}
-                  className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-full font-medium transition-all hover:shadow-lg hover:shadow-purple-500/30 hover:scale-105"
+                  className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-red-400 text-white px-6 py-3 rounded-full font-medium transition-all hover:shadow-lg hover:scale-105"
                 >
                   Continue
                   <ArrowRightCircle size={20} />
