@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Edit, Trash } from "lucide-react";
+// import { Edit, Trash } from "lucide-react";
 import SideBar from "../components/Sidebar.tsx";
+import PieDonutChart from "../components/PieDonutChart"
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
@@ -22,6 +23,36 @@ const ProfilePage: React.FC = () => {
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState("");
   const [passwordValid, setPasswordValid] = useState(false);
+  const [appData, setAppData] = useState<any[]>([]);
+  const pieColors = [
+    "#a78bfa", // violet-400
+    // "#8b5cf6", // violet-500
+    "#7c3aed", // violet-600
+    // "#6d28d9", // violet-700
+    "#5b21b6", // violet-800
+    // "#4c1d95", // violet-900
+    "#c084fc", // purple-400
+    // "#a855f7", // purple-500
+    "#9333ea", // purple-600
+    // "#7e22ce", // purple-700
+    "#6b21a8", // purple-800
+    // "#581c87", // purple-900
+    "#e879f9", // fuchsia-400
+    // "#d946ef", // fuchsia-500
+    "#c026d3", // fuchsia-600
+    // "#a21caf", // fuchsia-700
+    "#86198f", // fuchsia-800
+    // "#701a75", // fuchsia-900
+    "#f472b6", // pink-400
+    // "#ec4899", // pink-500
+    "#db2777", // pink-600
+    // "#be185d", // pink-700
+    "#9d174d", // pink-800
+    // "#831843", // pink-900
+  ];   
+  
+  const getColor = (index: number) => pieColors[index % pieColors.length];
+
 
   // const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [deleteText, setDeleteText] = useState("");
@@ -47,7 +78,66 @@ const ProfilePage: React.FC = () => {
       email: storedEmail || "No email available",
       joined: storedJoined
     });
+
+    fetchAppData();
   }, []);
+
+  // Fetch data for pie chart (apps and their test count)
+  const fetchAppData = async () => {
+    const userId = localStorage.getItem("UserId") || "defaultFallbackId";
+    const token = localStorage.getItem("authToken"); // Make sure this exists
+  
+    if (!token) {
+      console.error("No auth token found.");
+      return;
+    }
+  
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/app/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+  
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server responded with ${response.status}: ${errorText}`);
+      }
+  
+      const data = await response.json();
+      const apps = data.apps;
+  
+      const appDataPromises = apps.map(async (app: any, index: number) => {
+        const testResponse = await fetch(`${import.meta.env.VITE_API_URL}/test/${app._id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+      
+        if (!testResponse.ok) {
+          const errorText = await testResponse.text();
+          throw new Error(`Failed to fetch tests for app ${app._id}: ${errorText}`);
+        }
+
+        const testData = await testResponse.json();
+  
+        return {
+          appName: app.appName,
+          testCount: testData.tests.length,
+          color: getColor(index)
+        };
+      });
+
+  
+      const result = await Promise.all(appDataPromises);
+      setAppData(result);
+
+      console.log("App Data:", result);
+    } catch (error) {
+      console.error("Error fetching app data:", error);
+    }
+  };
+  
 
   useEffect(() => {
     validatePassword(newPassword);
@@ -263,18 +353,22 @@ const ProfilePage: React.FC = () => {
 
 
 
-          {/* Insights Section
+          {/* Insights Section */}
           <div className="bg-gray-900 p-6 rounded-xl border border-violet-900">
             <h2 className="text-xl text-gray-300 mb-4">Insights</h2>
-            <div className="grid grid-cols-2 gap-8">
-              <div className="bg-gray-900 h-60 rounded-xl border border-violet-900 flex items-center justify-center text-gray-500">
+            <div className="grid md:grid-cols-2 grid-cols-1 gap-8">
+              <div className="rounded-xl border border-violet-900 flex items-center justify-center p-4 bg-gray-900">
                 Chart Placeholder 1
               </div>
-              <div className="bg-gray-900 h-60 rounded-xl border border-violet-900 flex items-center justify-center text-gray-500">
-                Chart Placeholder 2
-              </div>
+              {/* <div className="rounded-xl border border-violet-900 flex items-center justify-center p-4 bg-gray-900"> */}
+              {appData.length > 0 ? (
+                <PieDonutChart data={appData} />
+              ) : (
+                <p className="text-gray-400">Loading...</p>
+              )}
+              {/* </div> */}
             </div>
-          </div> */}
+          </div>
 
           {/* Change Password Section */}
           <div className="bg-gray-900 p-6 rounded-xl border border-violet-900">
