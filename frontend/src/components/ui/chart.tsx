@@ -20,3 +20,10 @@ export const ChartTooltipContent: React.FC<{ hideLabel?: boolean }> = ({ hideLab
     <p className="font-semibold">Tooltip Content</p>
   </div>
 )
+
+export type ChartConfig = {
+  [key: string]: {
+    label: string
+    color: string
+  }
+}

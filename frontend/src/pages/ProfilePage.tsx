@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 // import { Edit, Trash } from "lucide-react";
 import SideBar from "../components/SideBar";
 import PieDonutChart from "../components/PieDonutChart";
-//import TotalTestsLineChart from "../components/TotalTestsLineChart";
+import OracleBarChart from "../components/OracleBarChart";
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
@@ -90,7 +90,7 @@ const ProfilePage: React.FC = () => {
     fetchAppData();
   }, []);
 
-  const [, setAllTests] = useState<any[]>([]); // add this at the top
+  const [allTests, setAllTests] = useState<any[]>([]); // add this at the top
 
   const fetchAppData = async () => {
     const userId = localStorage.getItem("UserId") || "defaultFallbackId";
@@ -159,6 +159,33 @@ const ProfilePage: React.FC = () => {
       console.error("Error fetching app data:", error);
     }
   };
+
+  const groupTestsByOracle = (tests: any[]) => {
+    const oracleCounts: Record<string, number> = {
+      "Theme Check": 0,
+      "Back Button": 0,
+      "User Input": 0,
+      "Language Detection": 0,
+    };
+  
+    tests.forEach((test) => {
+      const oracle = test.oracleSelected;
+      console.log("🔍 Found oracleSelected:", oracle); // ADD THIS
+      if (oracleCounts[oracle] !== undefined) {
+        oracleCounts[oracle]++;
+      }
+    });
+  
+    const structured = Object.entries(oracleCounts).map(([oracle, count]) => ({
+      oracle,
+      count,
+    }));
+  
+    console.log("✅ Final grouped oracle data:", structured); // ADD THIS TOO
+    return structured;
+  };
+  
+  
 
   useEffect(() => {
     validatePassword(newPassword);
@@ -415,17 +442,18 @@ const ProfilePage: React.FC = () => {
           {/* Insights Section */}
           <div className="bg-gray-900 p-6 rounded-xl border border-violet-900">
             <h2 className="text-xl text-gray-300 mb-4">Insights</h2>
-            <div className="grid md:grid-cols-1 grid-cols-1 gap-8 w-1/2 mx-auto">
-              {/* {console.log("Line chart data", groupTestsByMonth(allTests, userProfile.joined))} */}
-              {/* <TotalTestsLineChart
-                data={groupTestsByMonth(allTests, userProfile.joined)}
-              /> */}
-              {appData.length > 0 ? (
-                <PieDonutChart data={appData} />
+            <div className="grid md:grid-cols-2 grid-cols-1 gap-8">
+              {allTests.length > 0 ? (
+                <OracleBarChart data={groupTestsByOracle(allTests)} />
               ) : (
-                <p className="text-gray-400">Loading...</p>
+                <p className="text-gray-400">Loading Oracle Chart...</p>
               )}
-            </div>
+            {appData.length > 0 ? (
+              <PieDonutChart data={appData} />
+            ) : (
+              <p className="text-gray-400">Loading...</p>
+            )}
+          </div>
           </div>
 
           {/* Change Password Section */}
