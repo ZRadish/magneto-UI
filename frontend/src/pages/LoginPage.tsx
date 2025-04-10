@@ -31,7 +31,7 @@ const LoginPage = () => {
 
       console.log("API Response Data:", response.data);
 
-      const { user, token, error } = response.data;
+      const { user, token, dateJoined, error } = response.data;
 
       console.log(response.data);
 
@@ -49,7 +49,7 @@ const LoginPage = () => {
         localStorage.setItem("email", user.email);
         localStorage.setItem("lastName", user.lastName);
         // console.log(dateJoined);
-        // localStorage.setItem("createdAt", dateJoined.split("T")[0]);
+        localStorage.setItem("createdAt", dateJoined.split("T")[0]);
 
         //navigate("/dashboard");
         const isNewUser =
