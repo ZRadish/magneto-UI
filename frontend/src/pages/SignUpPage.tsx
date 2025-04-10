@@ -49,8 +49,8 @@ const SignUpPage = () => {
 
     // Validate password strength
     if (!PasswordValid) {
-        setError("Password must meet all strength requirements.");
-        return;
+      setError("Password must meet all strength requirements.");
+      return;
     }
 
     // Format input values before sending
@@ -71,7 +71,7 @@ const SignUpPage = () => {
 
       console.log("Register API Response:", response);
 
-        const data = response.data;
+      const data = response.data;
 
       if (data.error) {
         if (data.error.includes("already exists")) {
@@ -116,6 +116,10 @@ const SignUpPage = () => {
     }
   };
 
+  const handleMagnetoClick = () => {
+    navigate("/");
+  };
+
   useEffect(() => {
     validatePassword(password); //Initial validation
   }, [password]);
@@ -125,6 +129,20 @@ const SignUpPage = () => {
       className="min-h-screen bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 flex items-center
       justify-center relative overflow-hidden"
     >
+      <nav className="fixed top-0 w-full bg-transparent backdrop-blur-sm z-50 ">
+        <div className="relative flex items-center h-24">
+          {/* Left section: MAGNETO */}
+          <div className="absolute left-6">
+            <button
+              onClick={handleMagnetoClick}
+              className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent outline-none text-stroke-2 text-stroke-black"
+            >
+              MAGNETO-UI
+            </button>
+          </div>
+        </div>
+      </nav>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
