@@ -15,7 +15,6 @@ import {
   Globe,
   Server,
   Smartphone,
-  Zap,
 } from "lucide-react";
 import SideBar from "../components/SideBar";
 import { motion } from "framer-motion";
