@@ -8,7 +8,7 @@ export const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const { user, token } = await userService.loginUserService(email, password);
+    const { user, token, dateJoined } = await userService.loginUserService(email, password);
 
     res.status(200).json({
       user: {
@@ -19,6 +19,7 @@ export const loginUser = async (req, res) => {
         isVerified: user.isVerified
       },
       token,
+      dateJoined,
       error: ''
     });
   } catch (error) {
