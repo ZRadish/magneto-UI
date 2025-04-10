@@ -319,13 +319,17 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  // Common gradient style for consistent application
+  const gradientTextStyle =
+    "text-transparent bg-clip-text bg-purple-400 font-bold";
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 to-gray-950">
       <SideBar />
       <div className="ml-64 p-10 max-w-full mx-auto space-y-10">
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-purple-800">
+            <h1 className="text-3xl text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-purple-800 font-bold">
               User Profile
             </h1>
           </div>
@@ -338,7 +342,7 @@ const ProfilePage: React.FC = () => {
           {/* Personal Info Section */}
           <div className="bg-gray-900 p-6 rounded-xl border border-violet-900 space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl text-gray-300">Personal Info</h2>
+              <h2 className={`text-xl ${gradientTextStyle}`}>Personal Info</h2>
               <button
                 onClick={isEditingName ? handleSaveName : handleEditName}
                 className="px-4 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-white rounded-lg"
@@ -414,7 +418,9 @@ const ProfilePage: React.FC = () => {
 
           {/* Insights Section */}
           <div className="bg-gray-900 p-6 rounded-xl border border-violet-900">
-            <h2 className="text-xl text-gray-300 mb-4">Insights</h2>
+            <h2 className={`text-xl mb-4 ${gradientTextStyle} mb-1`}>
+              Insights
+            </h2>
             <div className="grid md:grid-cols-1 grid-cols-1 gap-8 w-1/2 mx-auto">
               {/* {console.log("Line chart data", groupTestsByMonth(allTests, userProfile.joined))} */}
               {/* <TotalTestsLineChart
@@ -430,7 +436,9 @@ const ProfilePage: React.FC = () => {
 
           {/* Change Password Section */}
           <div className="bg-gray-900 p-6 rounded-xl border border-violet-900">
-            <h2 className="text-xl text-gray-300 mb-4">Change Password</h2>
+            <h2 className={`text-xl ${gradientTextStyle} mb-4`}>
+              Change Password
+            </h2>
             <div
               className="grid grid-cols-2 gap-6"
               style={{ paddingLeft: "5%" }}
@@ -541,7 +549,9 @@ const ProfilePage: React.FC = () => {
 
           {/* Delete Account Section */}
           <div className="bg-red-950 p-6 rounded-xl border border-red-800">
-            <h2 className="text-xl text-red-400 mb-2">Delete User Account</h2>
+            <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600 mb-2">
+              Delete User Account
+            </h2>
             <p className="text-sm text-red-300 mb-4">
               Permanently remove your account and all its data. This action is
               not reversible. Type <strong>DELETE MY ACCOUNT</strong> to
