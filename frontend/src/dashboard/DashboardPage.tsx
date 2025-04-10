@@ -141,11 +141,11 @@ const Dashboard: React.FC = () => {
     resetModalState();
   };
 
-  const msOverFlSelect = (appId: string) => {
-    setSelectedAppId(appId);
-    // Don't automatically go to the next step, just select the app
-    setErrors({}); // Clear any previous errors
-  };
+  // const msOverFlSelect = (appId: string) => {
+  //   setSelectedAppId(appId);
+  //   // Don't automatically go to the next step, just select the app
+  //   setErrors({}); // Clear any previous errors
+  // };
 
   const resetTestState = () => {
     setTestName("");
