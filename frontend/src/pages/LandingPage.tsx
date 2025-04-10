@@ -257,11 +257,36 @@ const LandingPage = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                   <div className="text-left space-y-6">
                     <p className="text-gray-300 leading-relaxed">
-                      MAGNETO-UI is an advanced testing framework designed to
-                      detect and analyze UI inconsistencies in mobile
-                      applications. Our innovative approach uses specialized AI
-                      oracles to verify application behavior across different
-                      states and interactions.
+                      <a
+                        href="https://your-magneto-link.com"
+                        className="text-blue-400 hover:underline"
+                      >
+                        MAGNETO
+                      </a>{" "}
+                      is a
+                      <a
+                        href="https://your-research-link.com"
+                        className="text-blue-400 hover:underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {" "}
+                        research-driven
+                      </a>{" "}
+                      command-line tool designed for the automated testing of
+                      Android mobile applications. It enables developers to
+                      efficiently identify potential issues and bugs by
+                      simulating various user interactions and device
+                      conditions.
+                    </p>
+
+                    <p className="text-gray-300 leading-relaxed">
+                      MAGNETO-UI was developed to enhance MAGNETO by providing a
+                      modern, user-friendly interface that simplifies the
+                      testing process. It transforms the original command-line
+                      functionality into an intuitive web-based platform, making
+                      it easier to detect and analyze UI inconsistencies in
+                      mobile apps.
                     </p>
                   </div>
                 </div>
