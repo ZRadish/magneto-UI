@@ -1,6 +1,8 @@
 import React, { useState, useRef } from "react";
 import SideBar from "../components/SideBar";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+
 import {
   Book,
   ChevronRight,
@@ -13,6 +15,9 @@ import {
   Image,
   FileQuestion,
   File,
+  ArrowRight,
+  CircleArrowRight,
+  ArrowRightCircle,
 } from "lucide-react";
 
 interface Section {
@@ -83,6 +88,12 @@ const TutorialPage = () => {
       icon: <PlayCircle className="w-4 h-4" />,
     },
   ];
+
+  const navigate = useNavigate();
+
+  const handleArrowClick = () => {
+    navigate("/dashboard");
+  };
 
   const scrollToSection = (id: string) => {
     setActiveSection(id);
@@ -199,7 +210,6 @@ const TutorialPage = () => {
               </div>
             </div>
           </section>
-
           {/* What is Section */}
           <section
             ref={(el) => (contentRefs.current["what-is"] = el)}
@@ -311,7 +321,6 @@ const TutorialPage = () => {
               </div>
             </div>
           </section>
-
           {/* Why Use Section */}
           <section
             ref={(el) => (contentRefs.current["why-use"] = el)}
@@ -339,7 +348,6 @@ const TutorialPage = () => {
               reliability and validity of our testing results.
             </p>
           </section>
-
           <section
             ref={(el) => (contentRefs.current["avt"] = el)}
             className="bg-slate-900/50 rounded-xl shadow-lg p-8 mb-8 border border-violet-500/20"
@@ -374,7 +382,6 @@ const TutorialPage = () => {
               realistic manner.
             </p>
           </section>
-
           <section
             ref={(el) => (contentRefs.current["instructions"] = el)}
             className="mb-8 mt-20"
@@ -383,7 +390,6 @@ const TutorialPage = () => {
               Instructions for TraceReplayer and AVT
             </h2>
           </section>
-
           <section
             ref={(el) => (contentRefs.current["prerequisites"] = el)}
             className="bg-slate-900/50 rounded-xl shadow-lg p-8 mb-8 border border-violet-500/20"
@@ -469,7 +475,6 @@ const TutorialPage = () => {
               </ul>
             </ul>
           </section>
-
           <section
             ref={(el) => (contentRefs.current["setup"] = el)}
             className="bg-slate-900/50 rounded-xl shadow-lg p-8 mb-8 border border-violet-500/20"
@@ -534,7 +539,6 @@ const TutorialPage = () => {
               />
             </div>
           </section>
-
           <section
             ref={(el) => (contentRefs.current["config"] = el)}
             className="bg-slate-900/50 rounded-xl shadow-lg p-8 mb-8 border border-violet-500/20"
@@ -656,7 +660,6 @@ const TutorialPage = () => {
               </p>
             </div>
           </section>
-
           <section
             ref={(el) => (contentRefs.current["running"] = el)}
             className="bg-slate-900/50 rounded-xl shadow-lg p-8 mb-8 border border-violet-500/20"
@@ -753,6 +756,23 @@ const TutorialPage = () => {
               Oracles.
             </p>
           </section>
+          <div className="flex justify-center items-center px-4">
+            <div className="max-w-xl w-full bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl shadow-lg p-6 border border-purple-500/20">
+              <p className="text-2xl font-bold bg-gradient-to-r from-rose-400 via-fuchsia-500 to-indigo-500 bg-clip-text text-transparent text-center mb-2">
+                All done, head over to the dashboard:
+              </p>
+
+              <div className="flex justify-center mt-4">
+                <button
+                  onClick={handleArrowClick}
+                  className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-full font-medium transition-all hover:shadow-lg hover:shadow-purple-500/30 hover:scale-105"
+                >
+                  Continue
+                  <ArrowRightCircle size={20} />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </motion.div>
     </div>
