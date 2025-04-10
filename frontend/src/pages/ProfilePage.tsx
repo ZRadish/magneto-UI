@@ -1,127 +1,113 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Edit, Trash, Lock } from "lucide-react";
-import SideBar from "../components/SideBar";
+import { Edit, Trash } from "lucide-react";
+import SideBar from "../components/Sidebar.tsx";
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
-  const [userProfile, setUserProfile] = useState<{ name: string; email: string }>({
+  const [userProfile, setUserProfile] = useState<{ name: string; email: string; joined: string }>({
     name: "",
     email: "",
+    joined: ""
   });
-  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  const [isEditingName, setIsEditingName] = useState(false);
   const [firstName, setFirstName] = useState(localStorage.getItem("firstName") || "");
   const [lastName, setLastName] = useState(localStorage.getItem("lastName") || "");
   const firstNameInputRef = useRef<HTMLInputElement>(null);
-  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+
+  const [isEditingName, setIsEditingName] = useState(false);
+
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [passwordValid, setPasswordValid] = useState(false);
 
+  // const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [deleteText, setDeleteText] = useState("");
 
+  const validatePassword = (password: string) => {
+    const isStrongPassword =
+      password.length >= 6 && //At least 6 characters
+      /[A-Z]/.test(password) && //Contains uppercase letter
+      /[a-z]/.test(password) && //Contains lowercase letter
+      /\d/.test(password) && //Contains a number
+      /[^A-Za-z0-9]/.test(password); //Contains special character
+    setPasswordValid(isStrongPassword); //Update state based on password strength
+  };
 
   useEffect(() => {
-    // Retrieve user details from local storage
     const storedUsernameFirst = localStorage.getItem("firstName");
     const storedUsernameLast = localStorage.getItem("lastName");
     const storedEmail = localStorage.getItem("email");
+    const storedJoined = localStorage.getItem("createdAt") || "Unknown";
 
     setUserProfile({
       name: `${storedUsernameFirst || "Guest"} ${storedUsernameLast || "User"}`,
       email: storedEmail || "No email available",
+      joined: storedJoined
     });
   }, []);
 
-  const handleDeleteAccount = async () => {
-    const token = localStorage.getItem("authToken");
-    if (!token) {
-      alert("Authentication token not found");
-      return;
-    }
-
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/user/delete`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete account: ${response.status}`);
-      }
-
-      alert("Account deleted successfully.");
-      localStorage.removeItem("authToken"); // Clear authentication token
-      navigate("/login"); // Redirect to login page
-    } catch (error) {
-      console.error("Error deleting account:", error);
-      alert("Failed to delete your account. Please try again.");
-    }
-  };
+  useEffect(() => {
+    validatePassword(newPassword);
+  }, [newPassword]);
 
   const handleEditName = () => {
     setIsEditingName(true);
     setTimeout(() => {
-        firstNameInputRef.current?.focus(); // Auto-focus on first name field
+      firstNameInputRef.current?.focus();
     }, 0);
   };
 
   const handleSaveName = async () => {
     if (!firstName.trim() || !lastName.trim()) {
-        alert("First and Last name cannot be empty.");
-        return;
+      alert("First and Last name cannot be empty.");
+      return;
     }
-
+  
     const token = localStorage.getItem("authToken");
     if (!token) {
-        alert("Authentication token not found.");
-        return;
+      alert("Authentication token not found.");
+      return;
     }
-
+  
     try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/user/update-name`, {
-            method: "PATCH",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-                firstName: firstName.trim(),
-                lastName: lastName.trim(),
-            }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to update name: ${response.status}`);
-        }
-
-        const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
-        const formattedLastName = lastName.charAt(0).toUpperCase() + lastName.slice(1).toLowerCase();
-
-        // Update local storage & UI
-        localStorage.setItem("firstName", formattedFirstName);
-        localStorage.setItem("lastName", formattedLastName);
-        setUserProfile({ name: `${formattedFirstName} ${formattedLastName}`, email: userProfile.email });
-
-        window.dispatchEvent(new Event("userUpdated")); // Trigger event listener in SideBar.tsx
-        
-        setIsEditingName(false);
+      // Format first and last names
+      const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+      const formattedLastName = lastName.charAt(0).toUpperCase() + lastName.slice(1).toLowerCase();
+  
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/user/update-name`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          firstName: formattedFirstName,
+          lastName: formattedLastName,
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Failed to update name: ${response.status}`);
+      }
+  
+      // Save to local storage and update user profile state
+      localStorage.setItem("firstName", formattedFirstName);
+      localStorage.setItem("lastName", formattedLastName);
+      
+      // Update userProfile state with formatted names
+      setUserProfile({ ...userProfile, name: `${formattedFirstName} ${formattedLastName}` });
+  
+      window.dispatchEvent(new Event("userUpdated"));
+      setIsEditingName(false);
     } catch (error) {
-        console.error("Error updating name:", error);
-        alert("Failed to update name. Please try again.");
+      console.error("Error updating name:", error);
+      alert("Failed to update name. Please try again.");
     }
   };
-
-  const handleCancelEdit = () => {
-    setFirstName(localStorage.getItem("firstName") || "");
-    setLastName(localStorage.getItem("lastName") || "");
-    setIsEditingName(false);
-  };
+  
 
   const handleChangePassword = async () => {
     setPasswordError("");
@@ -131,14 +117,12 @@ const ProfilePage: React.FC = () => {
       setPasswordError("All fields are required.");
       return;
     }
-  
     if (newPassword !== confirmNewPassword) {
       setPasswordError("New password and confirmation do not match.");
       return;
     }
-  
-    if (newPassword.length < 6) {
-      setPasswordError("New password must be at least 6 characters long.");
+    if (!passwordValid) {
+      setPasswordError("Password does not meet complexity requirements.");
       return;
     }
   
@@ -161,24 +145,21 @@ const ProfilePage: React.FC = () => {
         }),
       });
   
+      const data = await response.json();
+  
       if (!response.ok) {
-        if (response.status === 401) {
-          setPasswordError("Incorrect old password.");
+        // If error is from the backend
+        if (data.error === "Incorrect old password.") {
+          setPasswordError("The old password you entered is incorrect.");
         } else {
-          throw new Error(`Failed to update password: ${response.status}`);
+          setPasswordError("An unexpected error occurred. Please try again.");
         }
-        return;
+      } else {
+        setPasswordSuccess(data.message || "Password changed successfully!");
+        setOldPassword("");
+        setNewPassword("");
+        setConfirmNewPassword("");
       }
-  
-      setPasswordSuccess("Password changed successfully!");
-      setOldPassword("");
-      setNewPassword("");
-      setConfirmNewPassword("");
-  
-      setTimeout(() => {
-        setShowChangePasswordModal(false);
-        setPasswordSuccess("");
-      }, 2000);
     } catch (error) {
       console.error("Error updating password:", error);
       setPasswordError("Failed to update password. Please try again.");
@@ -186,182 +167,219 @@ const ProfilePage: React.FC = () => {
   };
   
 
+  const handleDeleteAccount = async () => {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      alert("Authentication token not found");
+      return;
+    }
 
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/user/delete`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete account: ${response.status}`);
+      }
+
+      alert("Account deleted successfully.");
+      localStorage.removeItem("authToken");
+      navigate("/login");
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      alert("Failed to delete your account. Please try again.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 to-gray-950">
       <SideBar />
-      <div className="ml-64 p-8">
-        <div className="flex justify-between items-center mb-8">
+      <div className="ml-64 p-10 max-w-full mx-auto space-y-10">
+        <div className="flex justify-between items-center mb-4">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent mb-2">
-              Profile
+            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-purple-800">
+              User Profile
             </h1>
-            <h2 className="text-xl font-semibold text-gray-400">
-              User Information:
-            </h2>
           </div>
-          {isEditingName ? (
-              <div className="flex gap-3">
-                  <button
-                      onClick={handleSaveName}
-                      className="px-6 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
-                  >
-                      Save
-                  </button>
-                  <button
-                      onClick={handleCancelEdit}
-                      className="px-6 py-2 bg-gradient-to-r from-gray-600 to-gray-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
-                  >
-                      Cancel
-                  </button>
-              </div>
-          ) : (
+        </div>
+
+        <div className="overflow-y-auto space-y-5 h-[calc(100vh-150px)]" style={{ marginTop: "10px"}}>
+          {/* Personal Info Section */}
+          <div className="bg-gray-900 p-6 rounded-xl border border-violet-900 space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl text-gray-300">Personal Info</h2>
               <button
-                  id="edit-profile-btn"
-                  onClick={handleEditName}
-                  className="px-6 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2"
+                onClick={isEditingName ? handleSaveName : handleEditName}
+                className="px-4 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-white rounded-lg"
               >
-                  <Edit size={20} />
-                  <span>Edit Profile</span>
+                {isEditingName ? "Save" : "Edit"}
               </button>
-          )}
-
-        </div>
-
-        <div className="space-y-4">
-          <div className="bg-gray-900 p-6 rounded-lg border border-violet-900">
-            <h3 className="text-xl font-semibold text-gray-400">Personal Info</h3>
-            <div className="space-y-2 mt-4">
-            <div className="flex items-center gap-2">
-                {isEditingName ? (
-                    <>
-                    <p className="text-gray-400">
-                        <strong>Name: </strong>
-                    </p>
-                        <input
-                            ref={firstNameInputRef}
-                            type="text"
-                            value={firstName}
-                            onChange={(e) => setFirstName(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
-                            className="bg-gray-800 text-gray-300 border border-violet-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                        />
-                        <input
-                            type="text"
-                            value={lastName}
-                            onChange={(e) => setLastName(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
-                            className="bg-gray-800 text-gray-300 border border-violet-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                        />
-                    </>
-                ) : (
-                    <p className="text-gray-400">
-                        <strong>Name: </strong> {userProfile.name}
-                    </p>
-                )}
             </div>
-              <p className="text-gray-400">
-                <strong>Email: </strong> {userProfile.email}
-              </p>
+            <div className="grid grid-cols-2 gap-4" style={{ paddingLeft: "30px" }}>
+              <div>
+                <p className="text-gray-400 mb-1">First Name</p>
+                <input
+                  ref={firstNameInputRef}
+                  type="text"
+                  value={`${firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase()}`}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
+                  disabled={!isEditingName}
+                  style={{ paddingLeft: "2.5px" }}
+                  className={`w-full p-2 bg-transparent text-gray-200 text-lg ${
+                    isEditingName ? "text-lg text-gray-400 bg-gray-800 border border-violet-700 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500" : ""
+                  }`} // Add border when editing
+                />
+              </div>
+              <div>
+                <p className="text-gray-400 mb-1">Last Name</p>
+                <input
+                  type="text"
+                  value={`${lastName.charAt(0).toUpperCase() + lastName.slice(1).toLowerCase()}`}
+                  onChange={(e) => setLastName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
+                  disabled={!isEditingName}
+                  style={{ paddingLeft: "2.5px" }}
+                  className={`w-full p-2 bg-transparent text-gray-200 text-lg ${
+                    isEditingName ? "text-lg text-gray-400 bg-gray-800 border border-violet-700 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500" : ""
+                  }`} // Add border when editing
+                />
+              </div>
+              <div>
+                <p className="text-gray-400 mb-1">Email</p>
+                <p className="text-gray-200 text-lg" style={{ paddingLeft: "2.5px" }}>{userProfile.email}</p> {/* Increased font size */}
+              </div>
+              <div>
+                <p className="text-gray-400 mb-1">Date Joined</p>
+                <p className="text-gray-200 text-lg" style={{ paddingLeft: "2.5px" }}>{userProfile.joined}</p> {/* Increased font size */}
+              </div>
             </div>
           </div>
 
-          <div className="mt-8 flex justify-center gap-4">
-            <button
-              onClick={() => setShowChangePasswordModal(true)}
-              className="px-6 py-2 bg-gradient-to-r from-red-400 to-purple-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2"
-            >
-              <Lock size={20} />
-              <span>Change Password</span>
-            </button>
-            <button
-              onClick={() => setShowDeleteConfirmation(true)}
-              className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2"
-            >
-              <Trash size={20} />
-              <span>Delete Account</span>
-            </button>
-          </div>
-        </div>
 
-        {showChangePasswordModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-900 p-6 rounded-lg max-w-md w-full border border-violet-900">
-              <h2 className="text-xl font-bold bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent mb-4">
-                Change Password
-              </h2>
 
+          {/* Insights Section
+          <div className="bg-gray-900 p-6 rounded-xl border border-violet-900">
+            <h2 className="text-xl text-gray-300 mb-4">Insights</h2>
+            <div className="grid grid-cols-2 gap-8">
+              <div className="bg-gray-900 h-60 rounded-xl border border-violet-900 flex items-center justify-center text-gray-500">
+                Chart Placeholder 1
+              </div>
+              <div className="bg-gray-900 h-60 rounded-xl border border-violet-900 flex items-center justify-center text-gray-500">
+                Chart Placeholder 2
+              </div>
+            </div>
+          </div> */}
+
+          {/* Change Password Section */}
+          <div className="bg-gray-900 p-6 rounded-xl border border-violet-900">
+            <h2 className="text-xl text-gray-300 mb-4">Change Password</h2>
+            <div className="grid grid-cols-2 gap-6" style={{ paddingLeft: "5%" }}>
               <div className="space-y-4">
                 <input
                   type="password"
                   placeholder="Old Password"
                   value={oldPassword}
                   onChange={(e) => setOldPassword(e.target.value)}
-                  className="w-full p-2 bg-gray-800 text-gray-300 rounded-lg border border-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full p-2 bg-gray-800 text-gray-300 border border-violet-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
                 <input
                   type="password"
                   placeholder="New Password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full p-2 bg-gray-800 text-gray-300 rounded-lg border border-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full p-2 bg-gray-800 text-gray-300 border border-violet-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
                 <input
                   type="password"
                   placeholder="Confirm New Password"
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  className="w-full p-2 bg-gray-800 text-gray-300 rounded-lg border border-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full p-2 bg-gray-800 text-gray-300 border border-violet-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
-              </div>
-
-              {passwordError && <p className="text-sm text-red-500 mt-2">{passwordError}</p>}
-              {passwordSuccess && <p className="text-sm text-green-500 mt-2">{passwordSuccess}</p>}
-
-              <div className="flex justify-end gap-4 mt-4">
                 <button
                   onClick={handleChangePassword}
-                  className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
+                  disabled={!oldPassword || !passwordValid || newPassword !== confirmNewPassword}
+                  className={`w-full py-2 rounded-lg text-white transition-opacity ${
+                    oldPassword && passwordValid && newPassword === confirmNewPassword
+                      ? "bg-gradient-to-r from-red-400 to-purple-800 hover:opacity-90"
+                      : "bg-gray-700 cursor-not-allowed"
+                  }`}
                 >
                   Change Password
                 </button>
-                <button
-                  onClick={() => setShowChangePasswordModal(false)}
-                  className="px-4 py-2 bg-gradient-to-r from-gray-600 to-gray-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
-                >
-                  Cancel
-                </button>
+                {passwordError && <p className="text-red-500 text-sm">{passwordError}</p>}
+                {passwordSuccess && <p className="text-green-500 text-sm">{passwordSuccess}</p>}
               </div>
+              <ul className="text-lg text-gray-400 space-y-2" style={{ paddingLeft: "10%" }}>
+                <li className={newPassword.length >= 6 ? "text-green-500" : "text-gray-400"}>
+                  <span className="text-xl">✔</span> At least 6 characters
+                </li>
+                <li className={/[A-Z]/.test(newPassword) ? "text-green-500" : "text-gray-400"}>
+                  <span className="text-xl">✔</span> Contains uppercase letter
+                </li>
+                <li className={/[a-z]/.test(newPassword) ? "text-green-500" : "text-gray-400"}>
+                  <span className="text-xl">✔</span> Contains lowercase letter
+                </li>
+                <li className={/\d/.test(newPassword) ? "text-green-500" : "text-gray-400"}>
+                  <span className="text-xl">✔</span> Contains a number
+                </li>
+                <li className={/[^A-Za-z0-9]/.test(newPassword) ? "text-green-500" : "text-gray-400"}>
+                  <span className="text-xl">✔</span> Contains special character
+                </li>
+                <li
+                  className={newPassword === confirmNewPassword && newPassword !== "" ? "text-green-500" : "text-gray-400"}
+                >
+                  <span className="text-xl">✔</span> Passwords match
+                </li>
+              </ul>
             </div>
           </div>
-        )}
 
 
-        {/* Delete Confirmation Modal */}
-        {showDeleteConfirmation && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-gray-900 p-6 rounded-lg max-w-md w-full border border-violet-900">
-              <h2 className="text-xl font-bold bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent mb-4">
-                Are you sure you want to delete your account?
-              </h2>
-              <div className="flex justify-end gap-4">
-                <button
-                  onClick={handleDeleteAccount}
-                  className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
-                >
-                  Yes, Delete
-                </button>
-                <button
-                  onClick={() => setShowDeleteConfirmation(false)}
-                  className="px-4 py-2 bg-gradient-to-r from-gray-600 to-gray-800 text-gray-200 rounded-lg hover:opacity-90 transition-opacity"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
+
+
+          {/* Delete Account Section */}
+          <div className="bg-red-950 p-6 rounded-xl border border-red-800">
+            <h2 className="text-xl text-red-400 mb-2">Delete User Account</h2>
+            <p className="text-sm text-red-300 mb-4">
+              Permanently remove your account and all its data. This action is not reversible. Type <strong>DELETE MY ACCOUNT</strong> to confirm.
+            </p>
+            <input
+              type="text"
+              placeholder="Type DELETE MY ACCOUNT to confirm"
+              value={deleteText}
+              onChange={(e) => setDeleteText(e.target.value)}
+              className="w-full p-2 bg-gray-800 text-red-300 border border-red-700 rounded-lg mb-4"
+            />
+            <button
+              onClick={handleDeleteAccount}
+              disabled={deleteText !== "DELETE MY ACCOUNT"}
+              className={`w-full py-2 rounded-lg text-white ${
+                deleteText === "DELETE MY ACCOUNT" ? "bg-red-600 hover:bg-red-700" : "bg-gray-700 cursor-not-allowed"
+              }`}
+            >
+              Delete Account
+            </button>
           </div>
-        )}
+        </div>
+        {/* Add the style block here */}
+        <style >{`
+          .overflow-y-auto {
+            overflow-y: scroll; /* Keep the section scrollable */
+            -ms-overflow-style: none;  /* For Internet Explorer 10+ */
+            scrollbar-width: none;  /* For Firefox */
+          }
+
+          .overflow-y-auto::-webkit-scrollbar {
+            display: none; /* Hide the scrollbar in WebKit browsers (Chrome, Safari, Opera) */
+          }
+        `}</style>
       </div>
     </div>
   );
