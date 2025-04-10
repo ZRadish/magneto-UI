@@ -42,11 +42,11 @@ const PieDonutChart: React.FC<Props> = ({ data }) => {
 
   return (
     <Card className="flex flex-col w-full h-full p-4">
-  <CardHeader className="text-center space-y-1">
+  <CardHeader className="text-center space-y-1 mb-4">
     <CardTitle className="text-lg font-semibold text-gray-200">
       Tests Breakdown by App
     </CardTitle>
-    <CardDescription className="text-gray-400 text-sm">
+    <CardDescription className="text-gray-400 text-sm mb-8">
       Test distribution across all of your apps
     </CardDescription>
   </CardHeader>
@@ -100,12 +100,12 @@ const PieDonutChart: React.FC<Props> = ({ data }) => {
     </ResponsiveContainer>
   </CardContent>
 
-  <CardFooter className="mt-2 grid grid-cols-1 gap-1 text-sm text-gray-400 text-right">
+  <CardFooter className="mt-4 grid grid-cols-1 gap-1 text-sm text-gray-400 text-right">
     {data.length > 0 && (
       <>
         <div className="flex justify-between w-full">
-          <span className="text-muted-foreground">Most tested app:</span>
-          <span className="text-white font-medium">
+          <span className="text-muted-foreground mt-8">Most tested app:</span>
+          <span className="text-white font-medium mt-8">
             {
               data.reduce((prev, curr) =>
                 curr.testCount > prev.testCount ? curr : prev
