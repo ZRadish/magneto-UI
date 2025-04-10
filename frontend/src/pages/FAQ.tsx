@@ -79,14 +79,6 @@ const FAQPage: React.FC = () => {
       icon: <Shield className="w-5 h-5 text-red-400" />,
     },
     {
-      id: "aig-functionality",
-      category: "Testing",
-      question: "How does MAGNETO’s Automated Input Generator (AIG) work?",
-      answer:
-        "MAGNETO’s AIG generates diverse test cases by simulating real-world user interactions. It systematically tests different UI paths, edge cases, and unexpected user behaviors to uncover hidden bugs.",
-      icon: <Zap className="w-5 h-5 text-yellow-400" />,
-    },
-    {
       id: "system-requirements",
       category: "Getting Started",
       question: "What are the system requirements for running MAGNETO?",
