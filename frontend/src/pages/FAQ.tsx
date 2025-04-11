@@ -15,7 +15,6 @@ import {
   Globe,
   Server,
   Smartphone,
-  Zap,
 } from "lucide-react";
 import SideBar from "../components/SideBar";
 import { motion } from "framer-motion";
@@ -77,14 +76,6 @@ const FAQPage: React.FC = () => {
       answer:
         "MAGNETO detects potential security risks such as improper input validation, missing error handling, and UI inconsistencies that could lead to data leaks or unintended user actions.",
       icon: <Shield className="w-5 h-5 text-red-400" />,
-    },
-    {
-      id: "aig-functionality",
-      category: "Testing",
-      question: "How does MAGNETO’s Automated Input Generator (AIG) work?",
-      answer:
-        "MAGNETO’s AIG generates diverse test cases by simulating real-world user interactions. It systematically tests different UI paths, edge cases, and unexpected user behaviors to uncover hidden bugs.",
-      icon: <Zap className="w-5 h-5 text-yellow-400" />,
     },
     {
       id: "system-requirements",

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Play, Plus, Search, AlertCircle } from "lucide-react";
+import { Play, Plus, Search, AlertCircle, Info } from "lucide-react";
 import { Folder, ChevronRight } from "lucide-react";
 import SideBar from "../components/SideBar";
 import AppRow from "./AppRow";
@@ -28,6 +28,7 @@ const Dashboard: React.FC = () => {
   const [description, setDescription] = useState("");
   const [newAppName, setNewAppName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showInfoTooltip, setShowInfoTooltip] = useState(false);
 
   // Error state for validation
   const [errors, setErrors] = useState<{
@@ -427,27 +428,70 @@ const Dashboard: React.FC = () => {
     app.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleAlertCircleClick = () => {
+    navigate("/tutorial");
+  };
+
   // Render the modal content based on the current step
   const renderModalContent = () => {
     switch (currentStep) {
       case "select-app":
         return (
           <div className="relative">
-            {" "}
-            {/* Make modal content relative for button anchoring */}
-            <button
-              onClick={handleOpenNewModal}
-              className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2"
-            >
-              <Plus size={16} />
-              <span>New</span>
-            </button>
-            <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
-              Select App
-            </h2>
-            <p className="text-gray-400 mb-4">
-              Select an app folder to configure and run the test.
-            </p>
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center">
+                <h2 className="text-xl font-bold bg-gradient-to-r from-red-400 to-purple-800 bg-clip-text text-transparent">
+                  Select App
+                </h2>
+                <div className="relative ml-2">
+                  <Info
+                    className="text-amber-500 cursor-pointer"
+                    size={20}
+                    onMouseEnter={() => setShowInfoTooltip(true)}
+                    onMouseLeave={() => setShowInfoTooltip(false)}
+                    onClick={handleAlertCircleClick}
+                  />
+                  {/* Tooltip that appears on hover */}
+                  {showInfoTooltip && (
+                    <div className="absolute left-0 w-64 p-4 mt-2 bg-gray-900 border border-amber-600 rounded-lg shadow-lg z-10">
+                      <div className="flex items-start">
+                        <div>
+                          <h3 className="text-sm font-semibold text-amber-500 mb-1">
+                            Need Input Files?
+                          </h3>
+                          <p className="text-xs text-gray-300 mb-2">
+                            Before running a test, you need to generate input
+                            files.
+                          </p>
+                          <p className="text-xs text-gray-300">
+                            If you haven't generated them yet, go to the{" "}
+                            <a
+                              href="/tutorial"
+                              className="text-amber-500 hover:text-amber-400 underline"
+                            >
+                              TraceReplayer Tutorial
+                            </a>{" "}
+                            Page to create them.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={handleOpenNewModal}
+                className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-gray-200 rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2"
+              >
+                <Plus size={16} />
+                <span>New</span>
+              </button>
+            </div>
+            <div className="flex items-center mb-4">
+              <p className="text-gray-400 flex-grow">
+                Select an app folder to configure and run the test.
+              </p>
+            </div>
             <div
               className="bg-gray-800 p-4 rounded-lg max-h-[60vh] overflow-y-auto mb-6"
               style={{
@@ -478,7 +522,6 @@ const Dashboard: React.FC = () => {
             )}
           </div>
         );
-
       case "create-test":
         return (
           <>
@@ -545,41 +588,6 @@ const Dashboard: React.FC = () => {
       default:
         return null;
     }
-  };
-
-  // Render the Direction Box only on the first step
-  const renderDirectionBox = () => {
-    if (currentStep === "select-app") {
-      return (
-        <div className="bg-gray-900 p-6 rounded-lg w-1/2 border border-amber-600">
-          <div className="flex items-start">
-            <AlertCircle
-              className="text-amber-500 mr-2 mt-1 flex-shrink-0"
-              size={20}
-            />
-            <div>
-              <h3 className="text-lg font-semibold text-amber-500 mb-2">
-                Need Input Files?
-              </h3>
-              <p className="text-gray-300 mb-4">
-                Before running a test, you need to generate input files.
-              </p>
-              <p className="text-gray-300 mb-4">
-                If you haven't generated them yet, go to the{" "}
-                <a
-                  href="/tutorial"
-                  className="text-amber-500 hover:text-amber-400 underline"
-                >
-                  TraceReplayer Tutorial
-                </a>{" "}
-                Page to create them.
-              </p>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    return null;
   };
 
   return (
@@ -651,14 +659,9 @@ const Dashboard: React.FC = () => {
           )}
         </div>
 
-        {/* Run Test Modal with Direction Box */}
+        {/* Run Test Modal */}
         {isRunTestModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-            {/* Direction Box - Positioned in the top right */}
-            <div className="absolute w-0.75 top-20 mt-2 right-[-220px]">
-              {renderDirectionBox()}
-            </div>
-
             {/* Main Modal - Centered */}
             <div className="bg-gray-900 p-6 rounded-lg max-w-2xl w-full border border-violet-900">
               {renderModalContent()}
