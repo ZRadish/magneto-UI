@@ -11,7 +11,7 @@ export const ChartContainer: React.FC<{ children: React.ReactNode; className?: s
 
 export const ChartTooltip: React.FC<{ payload?: any; content: any; cursor?: any }> = ({
   content,
-  cursor,
+  //cursor,
 }) => content
 
 export const ChartTooltipContent: React.FC<{ hideLabel?: boolean }> = ({ hideLabel }) => (

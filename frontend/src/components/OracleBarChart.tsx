@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
-import { ChartContainer, type ChartConfig } from "../components/ui/chart";
+// import { ChartContainer, type ChartConfig } from "../components/ui/chart";
 
 interface OracleBarChartProps {
   data: { oracle: string; count: number }[];
@@ -22,17 +22,17 @@ const pieColors = [
 
 const getColor = (index: number) => pieColors[index % pieColors.length];
 
-const chartConfig: ChartConfig = {
-  count: {
-    label: "Tests",
-    color: "hsl(var(--chart-1))",
-  },
-};
+// const chartConfig: ChartConfig = {
+//   count: {
+//     label: "Tests",
+//     color: "hsl(var(--chart-1))",
+//   },
+// };
 
 const CustomBarTooltip = ({ active, payload }: TooltipProps<number, string>) => {
     if (!active || !payload || !payload.length) return null;
   
-    const { oracle, count } = payload[0].payload;
+    const { count } = payload[0].payload;
   
     return (
       <div className="bg-gray-900 text-white text-sm px-3 py-1 rounded-lg shadow-md border border-violet-600">
@@ -70,7 +70,7 @@ const OracleBarChart: React.FC<OracleBarChartProps> = ({ data }) => {
             <YAxis hide />
             <Tooltip cursor={false} content={<CustomBarTooltip />} />
             <Bar dataKey="count" radius={[8, 8, 0, 0]} barSize={40} isAnimationActive={true}>
-              {data.map((entry, index) => (
+              {data.map((_, index) => (
                 <Cell key={`cell-${index}`} fill={getColor(index)} />
               ))}
             </Bar>

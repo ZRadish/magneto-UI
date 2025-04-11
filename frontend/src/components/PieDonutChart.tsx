@@ -13,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/card"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../components/ui/chart"
+//import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../components/ui/chart"
 
 type Props = {
   data: { appName: string; testCount: number; color?: string }[]
@@ -22,7 +22,7 @@ type Props = {
 const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
     if (!active || !payload || !payload.length) return null;
   
-    const { name, value, fill } = payload[0];
+    const { name, value } = payload[0];
   
     return (
       <div className="bg-gray-900 text-white text-sm px-3 py-1 rounded-lg shadow-md border border-violet-600">
@@ -86,7 +86,7 @@ const PieDonutChart: React.FC<Props> = ({ data }) => {
                   </tspan>
                   <tspan
                     x={viewBox.cx}
-                    y={viewBox.cy + 24}
+                    y={(viewBox.cy ?? 0) + 24}
                     className="fill-gray-400 text-sm"
                   >
                     Tests

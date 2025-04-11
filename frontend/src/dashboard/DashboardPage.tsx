@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Play, Plus, Search, AlertCircle, Info } from "lucide-react";
+import { Play, Plus, Search, Info } from "lucide-react";
 import { Folder, ChevronRight } from "lucide-react";
 import SideBar from "../components/SideBar";
 import AppRow from "./AppRow";

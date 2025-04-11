@@ -1,4 +1,4 @@
-import * as React from "react"
+//import * as React from "react"
 
 export const Card = ({ children, className = "" }: any) => (
   <div className={`bg-gray-800 p-4 rounded-xl border border-violet-700 ${className}`}>
